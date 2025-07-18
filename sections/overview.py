@@ -87,4 +87,4 @@ def render_overview():
             st.plotly_chart(render_rankings(df, asset="BTC", by=chart_mode.lower()), use_container_width=True)
             st.plotly_chart(render_rankings(df, asset="ETH", by=chart_mode.lower()), use_container_width=True)
 
-    st.markdown("Powered by [CoinGecko](https://www.coingecko.com/)")
+    #st.markdown("Powered by [CoinGecko](https://www.coingecko.com/)")

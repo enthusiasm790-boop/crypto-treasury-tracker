@@ -34,17 +34,17 @@ st.sidebar.markdown("Support this Project")
 #st.sidebar.image("assets/qrcode_test.png", width=100)
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "BTC: bc1qxy2kgdygjrsqtzq2n0yrf249....."
+    "BTC: tbd"
     "</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "ETH: bc1qxy2kgdygjrsqtzq2n0yrf249....."
+    "ETH: tbd"
     "</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "USDT: bc1qxy2kgdygjrsqtzq2n0yrf249....."
+    "USDT: tbd"
     "</p>", unsafe_allow_html=True)
 
 

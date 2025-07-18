@@ -63,9 +63,9 @@ def render_about():
 
             <p>If you find the Crypto Treasury Tracker useful and want to support its development, crypto contributions are very welcome :)</p>
             <ul style="margin-top: 0; font-size: 0.9rem;">
-              <li>BTC: bc1qxy2kgdygjrsqtzq2n0yrf249.....</li>
-              <li>ETH: bc1qxy2kgdygjrsqtzq2n0yrf249.....</li>
-              <li>USDT: bc1qxy2kgdygjrsqtzq2n0yrf249.....</li>
+              <li>BTC: tbd</li>
+              <li>ETH: tbd</li>
+              <li>USDT: tbd</li>
             </ul>
 
             When using data, graphs, or insights from the <strong>Crypto Treasury Tracker</strong>, please cite as follows:<br>
