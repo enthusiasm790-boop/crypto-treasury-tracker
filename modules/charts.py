@@ -2,6 +2,15 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 
+def format_usd(value):
+    if value >= 1_000_000_000:
+        return f"${value/1_000_000_000:.1f}B"
+    elif value >= 1_000_000:
+        return f"${value/1_000_000:.1f}M"
+    elif value >= 1_000:
+        return f"${value/1_000:.1f}K"
+    else:
+        return f"${value:.0f}"
 
 def render_world_map(df, asset_filter, type_filter, value_range_filter):
     # Apply filters to raw data
@@ -26,6 +35,17 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     elif value_range_filter == ">1B":
         grouped = grouped[grouped["Total_USD"] >= 1_000_000_000]
 
+    # Format values for display
+    grouped["Formatted_Total_USD"] = grouped["Total_USD"].apply(format_usd)
+    grouped["Formatted_Avg_Holdings"] = grouped["Avg_Holdings"].apply(format_usd)
+
+    # Prepare custom hover data columns
+    grouped["Custom_Hover"] = (
+        "Total Reserves: " + grouped["Formatted_Total_USD"] +
+        "<br>Entities Reporting: " + grouped["Entity_Count"].astype(str) +
+        "<br>Average Reserve per Entity: " + grouped["Formatted_Avg_Holdings"]
+    )
+
     # Create choropleth
     fig = px.choropleth(
         grouped,
@@ -33,14 +53,14 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         locationmode="country names",
         color="Total_USD",
         hover_name="Country",
-        hover_data={
-            "Total_USD": ":,.0f",
-            "Entity_Count": True,
-            "Avg_Holdings": ":,.0f"
-        },
+        custom_data=["Custom_Hover"],
         color_continuous_scale=px.colors.sequential.Sunset,
         projection="natural earth",
         template="plotly_dark"
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{hovertext}</b><br>%{customdata[0]}<extra></extra>"
     )
 
     fig.update_layout(
