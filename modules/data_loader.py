@@ -5,9 +5,6 @@ import requests
 import time
 from google.oauth2.service_account import Credentials
 
-#BTC_PRICE = 120000
-#ETH_PRICE = 3500
-
 
 # Function to get live prices from CoinGecko
 @st.cache_data(ttl=3600)  # cache for 60 minutes (3600 seconds)
@@ -38,7 +35,8 @@ def load_data():
     print(f"Current BTC/USD: {BTC_PRICE}, \nCurrent ETH/USD: {ETH_PRICE}")
     
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_file("creds.json", scopes=scope)
+    service_account_info = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
     client = gspread.authorize(creds)
     sheet = client.open("master_table_v01")
 
