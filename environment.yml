@@ -1,0 +1,13 @@
+name: crypto-treasury-env
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - pip
+  - pip:
+      - streamlit
+      - gspread
+      - oauth2client
+      - plotly
+      - altair
