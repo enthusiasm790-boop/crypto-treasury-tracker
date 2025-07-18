@@ -69,10 +69,10 @@ def render_about():
             </ul>
 
             When using data, graphs, or insights from the <strong>Crypto Treasury Tracker</strong>, please cite as follows:<br>
-            Crypto Treasury Tracker by Benjamin Schellinger, PhD — steramlit.com<br>
+            Crypto Treasury Tracker by Benjamin Schellinger, PhD — url: https://crypto-treasury-tracker.streamlit.app/br>
             </p>
 
-            <p><strong>Feedback or collaboration?</strong> Connect via <a href="https://www.linkedin.com/in/your-profile" target="_blank">LinkedIn</a>.</p>
+            <p><strong>Feedback or collaboration?</strong> Connect via <a href="https://www.linkedin.com/in/benjaminschellinger/" target="_blank">LinkedIn</a>.</p>
             </div>
             """,
             unsafe_allow_html=True
