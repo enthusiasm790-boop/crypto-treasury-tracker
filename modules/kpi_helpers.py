@@ -24,13 +24,14 @@ def render_kpis(df):
 
     with col1:
         with st.container(border=True):
-            st.markdown("#### Total USD Value")
+            st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
+            #st.markdown("Total USD Value", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
 
             # Modern large-font formatting with tighter vertical space
-            st.markdown(
-                f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>${total_usd:,.0f}</h2>",
-                unsafe_allow_html=True
-            )
+            #st.markdown(
+            #    f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>${total_usd:,.0f}</h2>",
+            #    unsafe_allow_html=True
+            #)
 
             # Custom progress bar styled as BTC (orange) + ETH (blue)
             btc_pct = btc_usd / total_usd
@@ -38,24 +39,30 @@ def render_kpis(df):
 
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 18px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_pct*100:.1f}%; background-color: darkorange;'></div>
-                    <div style='width: {eth_pct*100:.1f}%; background-color: steelblue;'></div>
+                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
+                    <div style='width: {btc_pct*100:.1f}%; background-color: #f7931a;'></div>
+                    <div style='width: {eth_pct*100:.1f}%; background-color: #A9A9A9;'></div>
                 </div>
-                <small style='color: #aaa;'>BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B</small>
+                <div style='margin-top: 8px; margin-bottom: 5px; font-size: 16px; color: #aaa;'>
+                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B
+                </div>
                 """,
                 unsafe_allow_html=True
             )
 
+            st.markdown("")
+
+
     with col2:
         with st.container(border=True):
-            st.markdown("#### Total Unique Entities")
+            st.metric("Total Unique Entities", f"{total_entities}", help="Distinct entities holding BTC or ETH directly, excluding ETFs and indirect vehicles.")
+            #st.markdown("#### Total Unique Entities", help="Distinct entities holding BTC or ETH directly, excluding ETFs and indirect vehicles.")
 
             # Clean modern headline number
-            st.markdown(
-                f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>{total_entities}</h2>",
-                unsafe_allow_html=True
-            )
+            #st.markdown(
+            #    f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>{total_entities}</h2>",
+            #    unsafe_allow_html=True
+            #)
 
             # BTC/ETH split bar (same color scheme)
             btc_ent_pct = btc_entities / total_entities
@@ -63,22 +70,27 @@ def render_kpis(df):
 
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 18px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_ent_pct*100:.1f}%; background-color: darkorange;'></div>
-                    <div style='width: {eth_ent_pct*100:.1f}%; background-color: steelblue;'></div>
+                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
+                    <div style='width: {btc_ent_pct*100:.1f}%; background-color: #f7931a;'></div>
+                    <div style='width: {eth_ent_pct*100:.1f}%; background-color: #A9A9A9;'></div>
                 </div>
-                <small style='color: #aaa;'>BTC: {btc_entities} | ETH: {eth_entities}</small>
-                """,
+                <div style='margin-top: 8px; margin-bottom: 5px;font-size: 16px; color: #aaa;'>
+                    BTC: {btc_entities}B | ETH: {eth_entities}B
+                </div>
+                """
+                ,
                 unsafe_allow_html=True
             )
-
+            
+            st.markdown("")
 
 
     with col3:
         with st.container(border=True):
-            st.markdown("#### % of Supply")
+            st.metric("% of Supply", f"", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M).")
+            #st.markdown("#### % of Supply", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M).")
 
-            btc_pct = btc_units / 21_000_000
+            btc_pct = btc_units / 20_000_000
             eth_pct = eth_units / 120_000_000
 
             # BTC Donut
@@ -86,7 +98,7 @@ def render_kpis(df):
                 labels=["Held", "Remaining"],
                 values=[btc_pct, 1 - btc_pct],
                 hole=0.7,
-                marker_colors=["#FFA500", "#2c2c2c"],
+                marker_colors=["#f7931a", "#2c2c2c"],
                 textinfo="none",
                 hoverinfo="skip",
                 sort=False
@@ -107,7 +119,7 @@ def render_kpis(df):
                 labels=["Held", "Remaining"],
                 values=[eth_pct, 1 - eth_pct],
                 hole=0.7,
-                marker_colors=["steelblue", "#2c2c2c"],
+                marker_colors=["#A9A9A9", "#2c2c2c"],
                 textinfo="none",
                 hoverinfo="skip",
                 sort=False
