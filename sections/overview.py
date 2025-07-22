@@ -65,7 +65,7 @@ def render_overview():
     # ---------- Left Side: Filters + Map ----------
     with col_main:
         with st.container(border=True):
-            st.markdown("#### Global Treasury Map")
+            st.markdown("#### Global Treasury Map", help="Geographic distribution of crypto reserves, filtered by crypto asset, entity type, and value range.")
 
             filter_col1, filter_col2, filter_col3 = st.columns(3)
             asset_filter = filter_col1.selectbox("Crypto Asset", ["All", "BTC", "ETH"], index=0)
@@ -79,7 +79,7 @@ def render_overview():
     # ---------- Right Side: Rankings ----------
     with col_side:
         with st.container(border=True):
-            st.markdown("#### Crypto Entity Ranking")
+            st.markdown("#### Crypto Entity Ranking", help="Ranked list of top entities by crypto holdings, shown in units or USD value.")
 
             # Toggle between Units and USD
             chart_mode = st.radio("Display Mode", ["Units", "USD"], index=0, horizontal=True)
