@@ -8,7 +8,7 @@ st.sidebar.image("assets/logo2.png", width=200)
 st.sidebar.title("Crypto Treasury Tracker")
 #st.sidebar.caption("Your Digital Assets Holdings Monitor")
 
-section = st.sidebar.radio(" ", ["Global Summary", "Treasury Breakdown", "Reserve Database", "News", "About"])
+section = st.sidebar.radio(" ", ["Global Overview", "Treasury Breakdown", "Entity Ranking", "About"])
 
 st.markdown(
     """
@@ -22,7 +22,7 @@ st.markdown(
 )
 
 
-if section == "Global Summary":
+if section == "Global Overview":
     overview.render_overview()
 if section == "Treasury Breakdown":
     treasury_breakdown.render_treasury_breakdown()
@@ -36,17 +36,17 @@ st.sidebar.markdown("Support this Project")
 #st.sidebar.image("assets/qrcode_test.png", width=100)
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "BTC: tbd"
+    "BTC: bc1pujcv929agye4w7fmppkt94rnxf6zfv3c7zpc25lurv7rdtupprrsxzs5g6"
     "</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "ETH: tbd"
+    "ETH: 0xe1b0Ae7b8496450ea09e60b110C2665ba0CB888f"
     "</p>", unsafe_allow_html=True)
 
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
-    "USDT: tbd"
+    "SOL: 3JWdqYuy2cvMVdRbvXrQnZvtXJStBV5ooQ3QdqemtScQ"
     "</p>", unsafe_allow_html=True)
 
 

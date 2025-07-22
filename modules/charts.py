@@ -97,14 +97,26 @@ def render_rankings(df, asset="BTC", by="units"):
         else top["USD_Value"].apply(lambda x: f"${x/1e9:.1f}B")
     )
 
+    # Step 1: Create custom hover info
+    top["Custom Hover"] = top.apply(
+        lambda row: f"<b>{row['Entity Name']}</b><br>" +
+                    (f"Holdings: {row['Holdings']:,.0f}" if by == "units"
+                     else f"USD Value: <b>${row['USD_Value']/1e9:.1f}B</b>"),
+        axis=1
+    )
+
+    # Step 2: Updated figure with hovertemplate and customdata
     fig = go.Figure(go.Bar(
         x=values,
         y=top["Entity Name"],
         orientation='h',
         text=value_labels,
         textposition="auto",
-        marker=dict(color="#f7931a" if asset == "BTC" else "#A9A9A9")
+        marker=dict(color="#f7931a" if asset == "BTC" else "#A9A9A9"),
+        customdata=top["Custom Hover"],
+        hovertemplate="%{customdata}<extra></extra>"
     ))
+
 
     fig.update_layout(
         height=240,
