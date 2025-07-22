@@ -82,7 +82,7 @@ def render_overview():
             st.markdown("#### Crypto Entity Ranking", help="Ranked list of top entities by crypto holdings, shown in units or USD value.")
 
             # Toggle between Units and USD
-            chart_mode = st.radio("Display Mode", ["Units", "USD"], index=0, horizontal=True)
+            chart_mode = st.radio("", ["Units", "USD"], index=0, horizontal=True)
 
             st.plotly_chart(render_rankings(df, asset="BTC", by=chart_mode.lower()), use_container_width=True)
             st.plotly_chart(render_rankings(df, asset="ETH", by=chart_mode.lower()), use_container_width=True)
