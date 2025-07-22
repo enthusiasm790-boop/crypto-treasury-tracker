@@ -18,8 +18,8 @@ def render_treasury_breakdown():
         avg_value = df_filtered.groupby('Entity Name')['USD Value'].sum().mean()
 
         col1.metric("Total USD Value", f"${total_value:,.0f}")
-        col2.metric("'#' of Entities", f"{entity_count}")
-        col3.metric("Avg. Value per Entity", f"${avg_value:,.0f}")
+        col2.metric("Number of Entities", f"{entity_count}")
+        col3.metric("Avg. USD Value per Entity", f"${avg_value:,.0f}")
 
     # Charts row
     #row1_col1, row1_col2 = st.columns([2, 1])
