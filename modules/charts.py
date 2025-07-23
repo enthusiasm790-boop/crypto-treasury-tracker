@@ -399,4 +399,100 @@ def top_countries_by_usd_value(df):
     return fig
 
 
+def entity_ranking(df, by="USD", top_n=10):
+    value_col = 'USD Value' if by == "USD" else 'Holdings (Unit)'
 
+    # Step 1: Aggregate values for plotting
+    grouped = (
+        df.groupby(['Entity Name', 'Crypto Asset'])[value_col]
+        .sum()
+        .reset_index()
+    )
+
+    # Step 2: USD total ranking
+    usd_totals = (
+        df.groupby('Entity Name')['USD Value']
+        .sum()
+        .sort_values(ascending=False)
+    )
+
+    # Limit to top N by USD value
+    top_entities = usd_totals.head(top_n).index.tolist()
+    grouped = grouped[grouped['Entity Name'].isin(top_entities)]
+    grouped["USD Total"] = grouped["Entity Name"].map(usd_totals)
+
+    # Step 3: Hover & label formatting
+    if by == "USD":
+        grouped["Text"] = grouped[value_col].apply(format_usd)
+        hover = grouped.groupby('Entity Name').apply(
+            lambda d: f"<b>{d.name}</b><br>" + "<br>".join(
+                [f"{row['Crypto Asset']}: <b>{format_usd(row[value_col])}</b>" for _, row in d.iterrows()])
+        ).to_dict()
+    else:
+        grouped["Text"] = grouped[value_col].apply(lambda x: f"{int(x):,}")
+        hover = grouped.groupby('Entity Name').apply(
+            lambda d: f"<b>{d.name}</b><br>" + "<br>".join(
+                [f"{row['Crypto Asset']}: <b>{int(row[value_col]):,}</b>" for _, row in d.iterrows()])
+        ).to_dict()
+
+    grouped['Custom Hover'] = grouped['Entity Name'].map(hover)
+
+    # Step 4: Enforce x-axis sort
+    sorted_entities = (
+        grouped.groupby('Entity Name')['USD Total']
+        .max()
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+
+    grouped['Entity Name'] = pd.Categorical(grouped['Entity Name'], categories=sorted_entities, ordered=True)
+    grouped = grouped.sort_values(['Entity Name', 'Crypto Asset'])
+
+    # Step 5: Plot
+    fig = px.bar(
+        grouped,
+        x='Entity Name',
+        y=value_col,
+        color='Crypto Asset',
+        barmode='stack',
+        custom_data=['Custom Hover'],
+        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'},
+        category_orders={'Entity Name': sorted_entities}
+    )
+
+    totals = grouped.groupby('Entity Name')[value_col].sum()
+    for entity in totals.index:
+        label = format_usd(totals[entity]) if by == "USD" else f"{int(totals[entity]):,}"
+        fig.add_annotation(
+            x=entity,
+            y=totals[entity],
+            text=label,
+            showarrow=False,
+            font=dict(size=14, color='white'),
+            xanchor='center',
+            yanchor='bottom'
+        )
+
+    fig.update_traces(
+        textposition="none",
+        hovertemplate="%{customdata[0]}<extra></extra>"
+    )
+
+    fig.update_layout(
+        height=500,
+        xaxis=dict(title=None, tickfont=dict(size=12)),
+        yaxis=dict(title="" if by == "USD" else ""),
+        margin=dict(l=40, r=40, t=50, b=60),
+        font=dict(size=12),
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=1.1,
+            xanchor='center',
+            x=0.5
+        ),
+        legend_title_text='',
+        hoverlabel=dict(align='left')
+    )
+
+    return fig
