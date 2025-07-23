@@ -164,8 +164,10 @@ def holdings_by_entity_type_bar(df):
         color_discrete_map={
             'BTC': '#f7931a',
             'ETH': '#A9A9A9'
-        }
+        },
+        category_orders={'Entity Type': sorted_types}  # ✅ This line is key
     )
+
 
     # Add total USD value as annotation above each full bar
     totals = grouped.groupby('Entity Type')['USD Value'].sum()
