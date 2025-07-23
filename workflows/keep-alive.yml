@@ -12,9 +12,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Create empty commit
+      - name: Create empty commit and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "streamlit-bot"
           git config user.email "streamlit-bot@example.com"
           git commit --allow-empty -m "chore: keep alive"
-          git push
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+
