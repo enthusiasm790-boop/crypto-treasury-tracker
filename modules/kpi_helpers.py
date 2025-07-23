@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 
 def render_kpis(df):
     # Compute values
+    df = df[(df['USD Value'] > 0) | (df['Holdings (Unit)'] > 0)]
+
     total_usd = df["USD Value"].sum()
 
     btc_df = df[df["Crypto Asset"] == "BTC"]
@@ -55,8 +57,7 @@ def render_kpis(df):
 
     with col2:
         with st.container(border=True):
-            st.metric("Total Unique Entities", f"{total_entities}", help="Distinct entities holding BTC or ETH directly, excluding ETFs and indirect vehicles.")
-            #st.markdown("#### Total Unique Entities", help="Distinct entities holding BTC or ETH directly, excluding ETFs and indirect vehicles.")
+            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding BTC, ETH, or both directly, excluding ETFs and indirect vehicles. Note: some entities hold both and are only counted once.")
 
             # Clean modern headline number
             #st.markdown(
@@ -75,7 +76,7 @@ def render_kpis(df):
                     <div style='width: {eth_ent_pct*100:.1f}%; background-color: #A9A9A9;'></div>
                 </div>
                 <div style='margin-top: 8px; margin-bottom: 5px;font-size: 16px; color: #aaa;'>
-                    BTC: {btc_entities}B | ETH: {eth_entities}B
+                    BTC: {btc_entities} | ETH: {eth_entities}
                 </div>
                 """
                 ,
