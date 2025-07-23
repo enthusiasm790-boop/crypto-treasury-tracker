@@ -22,5 +22,9 @@ def apply_filters(df):
         if selected_country != "All":
             df_filtered = df_filtered[df_filtered['Country'] == selected_country]
 
+        # Filter out zero USD value holdings
+        df_filtered = df_filtered[df_filtered['USD Value'] > 0]
+
         return df_filtered
+
 
