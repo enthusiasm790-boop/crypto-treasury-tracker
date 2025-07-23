@@ -2,13 +2,13 @@ import streamlit as st
 from sections import overview, ranking, treasury_breakdown, about
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
+st.sidebar.image("assets/logo2.png", width=150)
 
 # Sidebar with logo and navigation
-st.sidebar.image("assets/logo2.png", width=200)
 st.sidebar.title("Crypto Treasury Tracker")
-#st.sidebar.caption("Your Digital Assets Holdings Monitor")
+st.sidebar.caption("_Monitor Strategic Crypto Reserves—All in One Place!_")
 
-section = st.sidebar.radio(" ", ["Global Overview", "Entity Ranking", "Treasury Breakdown", "About"])
+section = st.sidebar.radio("Navigation Bar", ["🌎 Global Overview", "🏆 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
 
 st.markdown(
     """
@@ -22,19 +22,19 @@ st.markdown(
 )
 
 
-if section == "Global Overview":
+if section == "🌎 Global Overview":
     overview.render_overview()
-if section == "Entity Ranking":
+if section == "🏆 Entity Ranking":
     ranking.render_entity_ranking()
-if section == "Treasury Breakdown":
+if section == "🔍 Treasury Breakdown":
     treasury_breakdown.render_treasury_breakdown()
-if section == "About":
+if section == "ℹ️ About":
     about.render_about()
 
 
 # Support
 st.sidebar.markdown("---")
-st.sidebar.markdown("Support this Project")
+st.sidebar.markdown("Support this project ❤️")
 #st.sidebar.image("assets/qrcode_test.png", width=100)
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
