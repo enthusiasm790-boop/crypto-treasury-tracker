@@ -1,5 +1,5 @@
 import streamlit as st
-from sections import overview, treasury_breakdown, about
+from sections import overview, ranking, treasury_breakdown, about
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
 
@@ -8,7 +8,7 @@ st.sidebar.image("assets/logo2.png", width=200)
 st.sidebar.title("Crypto Treasury Tracker")
 #st.sidebar.caption("Your Digital Assets Holdings Monitor")
 
-section = st.sidebar.radio(" ", ["Global Overview", "Treasury Breakdown", "Entity Ranking", "About"])
+section = st.sidebar.radio(" ", ["Global Overview", "Entity Ranking", "Treasury Breakdown", "About"])
 
 st.markdown(
     """
@@ -24,6 +24,8 @@ st.markdown(
 
 if section == "Global Overview":
     overview.render_overview()
+if section == "Entity Ranking":
+    ranking.render_entity_ranking()
 if section == "Treasury Breakdown":
     treasury_breakdown.render_treasury_breakdown()
 if section == "About":
