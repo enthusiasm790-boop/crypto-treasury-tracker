@@ -1,0 +1,32 @@
+name: Keep Streamlit App Alive
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'  # ⏱ Every minute — for testing!
+  workflow_dispatch:        # 🧪 Manual trigger option
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Update keepalive file
+        run: |
+          echo "Keep-alive ping: $(date -u)" > keepalive.txt
+
+      - name: Commit and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "bennyocean"
+          git config user.email "benjamin.schellinger@web.de"
+          git pull origin $(git rev-parse --abbrev-ref HEAD)
+          git add keepalive.txt
+          git commit -m "chore: keep alive at $(date -u)" || echo "No changes to commit"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
