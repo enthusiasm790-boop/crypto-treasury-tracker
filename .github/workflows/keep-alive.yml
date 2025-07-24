@@ -2,7 +2,7 @@ name: Keep Streamlit App Alive
 
 on:
   schedule:
-    - cron: '*/1 * * * *'  # ⏱ Every minute — for testing!
+    - cron: '*/5 * * * *'  # ⏱ Every minute — for testing!
   workflow_dispatch:        # 🧪 Manual trigger option
 
 jobs:
