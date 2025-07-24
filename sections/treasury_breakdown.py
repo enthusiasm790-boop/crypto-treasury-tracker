@@ -33,7 +33,7 @@ def render_treasury_breakdown():
 
     with row1_col2:
         with st.container(border=True):
-            st.markdown("#### Entity Type Distribution", help="Share of entities by type.")
+            st.markdown("#### Entity Type Distribution", help="Share of entities by type. Other includes protocols, L1/L2 networks, AI agents, and community-led projects.")
             fig_pie = charts.entity_type_distribution_pie(df_filtered)
             st.plotly_chart(fig_pie, use_container_width=True)
 
