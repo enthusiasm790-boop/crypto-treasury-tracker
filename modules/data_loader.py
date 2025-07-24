@@ -41,7 +41,6 @@ def load_data():
     sheet = client.open("master_table_v01")
 
     btc_data = pd.DataFrame(sheet.worksheet("aggregated_btc_data").get_all_records())
-    print(btc_data.head())
     eth_data = pd.DataFrame(sheet.worksheet("aggregated_eth_data").get_all_records())
     #meta = sheet.worksheet("metadata").cell(1,1).value
     meta = "July 23, 2025"
