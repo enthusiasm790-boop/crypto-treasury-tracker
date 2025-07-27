@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from modules.data_loader import load_data, get_prices
 from modules.kpi_helpers import render_kpis
 from modules.charts import render_world_map, render_rankings
@@ -39,7 +40,6 @@ def render_header(BTC_PRICE, ETH_PRICE, last_updated):
         <img src="data:image/png;base64,{coingecko_icon_b64}" style="height: 16px; vertical-align: middle; margin-right: 0px;">
         <a href="https://www.coingecko.com/" target="_blank">CoinGecko</a>
     </div>
-    <div>Last update: <b>{last_updated}</b></div>
 </div>
 """
 
@@ -57,34 +57,57 @@ def render_overview():
     # KPIs
     render_kpis(df)
 
-    # ---------------------------
-    # Layout: 2 + 1 column structure
-    # ---------------------------
-    col_main, col_side = st.columns([2, 1])
+    # Global Map
+    with st.container(border=True):
+        st.markdown("#### Global Treasury Map", help="Geographic distribution of crypto reserves, filtered by crypto asset, entity type, and value range.")
 
-    # ---------- Left Side: Filters + Map ----------
-    with col_main:
-        with st.container(border=True):
-            st.markdown("#### Global Treasury Map", help="Geographic distribution of crypto reserves, filtered by crypto asset, entity type, and value range.")
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        asset_filter = filter_col1.selectbox("Crypto Asset", ["All", "BTC", "ETH"], index=0)
+        type_options = ["All"] + sorted(df["Entity Type"].dropna().unique().tolist())
+        type_filter = filter_col2.selectbox("Entity Type", type_options, index=0)
+        value_filter = filter_col3.selectbox("Value Range (USD)", ["All", "0–100M", "100M–1B", ">1B"], index=0)
 
-            filter_col1, filter_col2, filter_col3 = st.columns(3)
-            asset_filter = filter_col1.selectbox("Crypto Asset", ["All", "BTC", "ETH"], index=0)
-            type_options = ["All"] + sorted(df["Entity Type"].dropna().unique().tolist())
-            type_filter = filter_col2.selectbox("Entity Type", type_options, index=0)
-            value_filter = filter_col3.selectbox("Value Range (USD)", ["All", "0–100M", "100M–1B", ">1B"], index=0)
+        map_fig = render_world_map(df, asset_filter, type_filter, value_filter)
+        st.plotly_chart(map_fig, use_container_width=True, config={"scrollZoom": False})
 
-            map_fig = render_world_map(df, asset_filter, type_filter, value_filter)
-            st.plotly_chart(map_fig, use_container_width=True)
+    # Top 5 Rankings (BTC + ETH)
+    with st.container(border=True):
+        st.markdown("#### Top 5 Crypto Holders", help="List of top 5 entities by crypto holdings, shown in units or USD value.")
 
-    # ---------- Right Side: Rankings ----------
-    with col_side:
-        with st.container(border=True):
-            st.markdown("#### Crypto Entity Ranking", help="Ranked list of top entities by crypto holdings, shown in units or USD value.")
+        # Toggle between Units and USD
+        chart_mode = st.radio("", ["Units", "USD"], index=0, horizontal=True)
 
-            # Toggle between Units and USD
-            chart_mode = st.radio("", ["Units", "USD"], index=0, horizontal=True)
+        col_btc, col_eth = st.columns([1,1])
 
+        with col_btc:
             st.plotly_chart(render_rankings(df, asset="BTC", by=chart_mode.lower()), use_container_width=True)
+
+        with col_eth:
             st.plotly_chart(render_rankings(df, asset="ETH", by=chart_mode.lower()), use_container_width=True)
 
-    #st.markdown("Powered by [CoinGecko](https://www.coingecko.com/)")
+    # Table Map
+    table = df.copy()
+    table = table.sort_values("USD Value", ascending=False)
+
+    table = table.reset_index(drop=True)
+    table.index = table.index + 1
+    table.index.name = "Rank"
+
+    table["Holdings (Unit)"] = table["Holdings (Unit)"].round(0)
+    table["USD Value"] = table["USD Value"].round(0)
+
+    row_count = st.selectbox("Rows to display", options=[5, 10, 25, 50, 100], index=1)
+
+    # Display as interactive dataframe (sortable, scrollable)
+    st.dataframe(table.head(row_count),
+        column_config={
+            "USD Value": st.column_config.NumberColumn(
+                "USD Value",
+                format="$%d",
+            )
+        },
+        use_container_width=True
+    )
+ 
+    # Last update info
+    st.caption("*Last treasury data base update: July 23, 2025*")
