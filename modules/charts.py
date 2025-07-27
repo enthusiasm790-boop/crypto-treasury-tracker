@@ -2,6 +2,10 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.colors import qualitative
+from modules.kpi_helpers import load_base64_image
+
+
+logo_b64 = load_base64_image("assets/ctt-symbol.svg")
 
 
 def format_usd(value):
@@ -79,6 +83,16 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         height=500,
         coloraxis_colorbar=dict(title="Total USD"),
         font=dict(size=12),
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=0.15, y=0.1,
+                sizex=0.1, sizey=0.1,
+                xanchor="left", yanchor="bottom",
+                opacity=1,
+                layer="above"
+            )]
     )
 
 
@@ -133,8 +147,18 @@ def render_rankings(df, asset="BTC", by="units"):
         yaxis=dict(autorange="reversed", tickfont=dict(size=12), title_standoff=25),
         margin=dict(l=140, r=10, t=40, b=20),  # Uniform left margin
         font=dict(size=12),
-        hoverlabel=dict(align='left') 
-    )
+        hoverlabel=dict(align='left'),
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=0.85, y=0.1,
+                sizex=0.15, sizey=0.15,
+                xanchor="center", yanchor="middle",
+                opacity=1,
+                layer="above"
+            )]
+        )
 
     return fig
 
@@ -218,6 +242,16 @@ def holdings_by_entity_type_bar(df):
         xaxis_title="",
         yaxis_title="",
         legend_title_text='',
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=1, y=1,
+                sizex=0.15, sizey=0.1,
+                xanchor="right", yanchor="top",
+                opacity=1,
+                layer="above"
+            )]
     )
 
     return fig
@@ -251,7 +285,17 @@ def entity_type_distribution_pie(df):
             xanchor='center',
             x=0.5
         ),
-        hoverlabel=dict(align='left') 
+        hoverlabel=dict(align='left') ,
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5,
+                sizex=0.2, sizey=0.15,
+                xanchor="center", yanchor="middle",
+                opacity=1,
+                layer="above"
+            )]
     )
 
     return fig
@@ -328,7 +372,17 @@ def top_countries_by_entity_count(df):
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
         yaxis=dict(categoryorder='total ascending', title="", tickfont=dict(size=14)),
         xaxis=dict(tickformat=',d', title=""),
-        showlegend=False
+        showlegend=False,
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=0.9, y=0,
+                sizex=0.2, sizey=0.1,
+                xanchor="right", yanchor="bottom",
+                opacity=1,
+                layer="below"
+            )]
     )
 
     return fig
@@ -404,7 +458,17 @@ def top_countries_by_usd_value(df):
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
         yaxis=dict(categoryorder='total ascending', title=""),
         xaxis=dict(title=""),
-        showlegend=False
+        showlegend=False,
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=0.9, y=0,
+                sizex=0.2, sizey=0.1,
+                xanchor="right", yanchor="bottom",
+                opacity=1,
+                layer="below"
+            )]
     )
 
     return fig
@@ -503,7 +567,17 @@ def entity_ranking(df, by="USD", top_n=10):
             x=0.5
         ),
         legend_title_text='',
-        hoverlabel=dict(align='left')
+        hoverlabel=dict(align='left'),
+        images=[
+            dict(
+                source=f"data:image/svg+xml;base64,{logo_b64}",
+                xref="paper", yref="paper",
+                x=1, y=1,
+                sizex=0.10, sizey=0.12,
+                xanchor="right", yanchor="top",
+                opacity=1,
+                layer="above"
+            )]
     )
 
     return fig
