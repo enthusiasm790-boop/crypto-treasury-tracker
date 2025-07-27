@@ -66,12 +66,20 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     )
 
     fig.update_layout(
+        geo=dict(
+            showframe=False,
+            showcoastlines=True,
+            projection_type="natural earth",
+            center=dict(lat=20, lon=0),
+            projection_scale=1  # optional zoom level
+        ),
+        uirevision="static-map",  # Prevents user interaction from updating layout
         margin=dict(l=0, r=0, t=10, b=0),
         height=500,
         coloraxis_colorbar=dict(title="Total USD"),
-        geo=dict(showframe=False, showcoastlines=True),
         font=dict(size=12),
     )
+
 
     return fig
 
