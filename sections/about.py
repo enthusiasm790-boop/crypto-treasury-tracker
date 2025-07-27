@@ -1,8 +1,12 @@
 import streamlit as st
 import pandas as pd
+from modules.kpi_helpers import render_ctt_logo
 
 
 def render_about():
+
+    render_ctt_logo()
+    
     # Box 1: Project Overview
     with st.container(border=True):
         st.markdown(

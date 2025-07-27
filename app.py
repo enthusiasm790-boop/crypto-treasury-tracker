@@ -2,13 +2,13 @@ import streamlit as st
 from sections import overview, ranking, treasury_breakdown, about
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
-st.sidebar.image("assets/logo2.png", width=150)
+st.sidebar.image("assets/ctt-logo-bold.svg", width=200)
 
 # Sidebar with logo and navigation
-st.sidebar.title("Crypto Treasury Tracker")
+#st.sidebar.title("Crypto Treasury Tracker")
 st.sidebar.caption("_Monitor Strategic Crypto Reserves—All in One Place!_")
 
-section = st.sidebar.radio("Navigation Bar", ["🌎 Global Overview", "🏆 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
+section = st.sidebar.radio("Crypto Treasury Tracker", ["🌎 Global Overview", "🏆 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
 
 st.markdown(
     """

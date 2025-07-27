@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.colors import qualitative
 
+
 def format_usd(value):
     if value >= 1_000_000_000:
         return f"${value/1_000_000_000:.1f}B"

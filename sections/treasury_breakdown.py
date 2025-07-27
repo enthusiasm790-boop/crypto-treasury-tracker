@@ -1,11 +1,14 @@
 import streamlit as st
 from modules.data_loader import load_data
 from modules.filters import apply_filters
+from modules.kpi_helpers import render_ctt_logo
 from modules import charts
 
 
 def render_treasury_breakdown():
     # st.title(" Treasury Breakdown")
+
+    render_ctt_logo()
 
     df, last_updated = load_data()
     df_filtered = apply_filters(df)

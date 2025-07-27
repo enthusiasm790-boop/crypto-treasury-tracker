@@ -1,6 +1,24 @@
 import streamlit as st
 import plotly.graph_objects as go
+import base64
 
+
+def load_base64_image(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+logo_b64 = load_base64_image("assets/ctt-symbol.svg")
+
+def render_ctt_logo():
+    html = f"""
+<div style="display: flex; justify-content: flex-end; align-items: center;
+            padding: 0.5rem 1rem; background-color: #f8f9fa; border-radius: 0.5rem;
+            font-size: 1rem; color: #333;">
+    <img src="data:image/svg+xml;base64,{logo_b64}" style="height: 25px; vertical-align: middle;">
+</div>
+"""
+    with st.container(border=False):
+        st.markdown(html, unsafe_allow_html=True)
 
 def render_kpis(df):
     # Compute values
@@ -27,13 +45,6 @@ def render_kpis(df):
     with col1:
         with st.container(border=True):
             st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
-            #st.markdown("Total USD Value", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
-
-            # Modern large-font formatting with tighter vertical space
-            #st.markdown(
-            #    f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>${total_usd:,.0f}</h2>",
-            #    unsafe_allow_html=True
-            #)
 
             # Custom progress bar styled as BTC (orange) + ETH (blue)
             btc_pct = btc_usd / total_usd
@@ -59,12 +70,6 @@ def render_kpis(df):
         with st.container(border=True):
             st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding BTC, ETH, or both directly, excluding ETFs and indirect vehicles. Note: some entities hold both and are only counted once.")
 
-            # Clean modern headline number
-            #st.markdown(
-            #    f"<h2 style='margin-bottom: 0; font-size: 2.5rem; color: white;'>{total_entities}</h2>",
-            #    unsafe_allow_html=True
-            #)
-
             # BTC/ETH split bar (same color scheme)
             btc_ent_pct = btc_entities / total_entities
             eth_ent_pct = eth_entities / total_entities
@@ -89,7 +94,6 @@ def render_kpis(df):
     with col3:
         with st.container(border=True):
             st.metric("% of Supply", f"", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M).")
-            #st.markdown("#### % of Supply", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M).")
 
             btc_pct = btc_units / 20_000_000
             eth_pct = eth_units / 120_000_000

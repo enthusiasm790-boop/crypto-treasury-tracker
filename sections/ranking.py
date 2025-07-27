@@ -2,9 +2,13 @@ import streamlit as st
 from modules.data_loader import load_data
 from modules.filters import apply_filters
 from modules.charts import entity_ranking
+from modules.kpi_helpers import render_ctt_logo
 
 
 def render_entity_ranking():
+    
+    render_ctt_logo()
+
     df, last_updated = load_data()
     df_filtered = apply_filters(df)
 

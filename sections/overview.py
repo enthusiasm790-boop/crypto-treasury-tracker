@@ -13,6 +13,8 @@ def load_base64_image(path):
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
+logo_b64 = load_base64_image("assets/ctt-symbol.svg")
+
 def render_header(BTC_PRICE, ETH_PRICE, last_updated):
     # Resolve absolute paths to asset images
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,16 +31,21 @@ def render_header(BTC_PRICE, ETH_PRICE, last_updated):
 <div style="display: flex; justify-content: space-between; align-items: center;
             padding: 0.5rem 1rem; background-color: #f8f9fa; border-radius: 0.5rem;
             font-size: 1rem; color: #333;">
+    <!-- Left side: BTC, ETH, CoinGecko -->
     <div>
-        <img src="data:image/png;base64,{btc_icon_b64}" style="height: 16px; vertical-align: middle; margin-right: 4px;">
+        <img src="data:image/png;base64,{btc_icon_b64}" style="height: 20px; vertical-align: middle; margin-top: -3px; margin-right: 2px;">
         <b>${BTC_PRICE:,.0f}</b>
         &nbsp;&nbsp;
-        <img src="data:image/png;base64,{eth_icon_b64}" style="height: 16px; vertical-align: middle; margin-right: 4px;">
+        <img src="data:image/png;base64,{eth_icon_b64}" style="height: 20px; vertical-align: middle; margin-top: -3px; margin-right: 2px;">
         <b>${ETH_PRICE:,.0f}</b>
         &nbsp;&nbsp;
-        Powered by 
-        <img src="data:image/png;base64,{coingecko_icon_b64}" style="height: 16px; vertical-align: middle; margin-right: 0px;">
-        <a href="https://www.coingecko.com/" target="_blank">CoinGecko</a>
+        Powered by
+        <img src="data:image/png;base64,{coingecko_icon_b64}" style="height: 20px; vertical-align: middle; margin-top: -3px; margin-left: 2px;; margin-right: 0px;">
+        <a href="https://www.coingecko.com/" target="_blank" style="text-decoration: none; color: inherit;">CoinGecko</a>
+    </div>
+    <!-- Right side: CTT logo -->
+    <div>
+        <img src="data:image/svg+xml;base64,{logo_b64}" style="height: 25px; vertical-align: middle;">
     </div>
 </div>
 """
@@ -85,7 +92,8 @@ def render_overview():
         with col_eth:
             st.plotly_chart(render_rankings(df, asset="ETH", by=chart_mode.lower()), use_container_width=True)
 
-    # Table Map
+
+    # Table
     table = df.copy()
     table = table.sort_values("USD Value", ascending=False)
 
