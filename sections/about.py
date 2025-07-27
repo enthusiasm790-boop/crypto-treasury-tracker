@@ -7,13 +7,13 @@ def render_about():
     with st.container(border=True):
         st.markdown(
             """
-            <h4 style="margin-top: 0;">First Multi-Asset Crypto Holdings Dashboard—All in One Place</h4>
+            <h4 style="margin-top: 0;">First Multi-Asset Crypto Treasury Tracker</h4>
             
             <p>Crypto reserves held by public, private, and sovereign entities are increasingly shaping digital asset market structure and institutional narratives. Yet existing trackers remain fragmented—most cover only Bitcoin or a narrow subset.</p>
 
-            <p>The <strong>Crypto Treasury Tracker</strong> maps and visualizes crypto reserves held by public companies, private firms, DAOs, nonprofits, and sovereigns.</p>
+            <p>The <strong>Crypto Treasury Tracker</strong> maps and visualizes <strong>ALL</strong> crypto reserves held by public companies, private firms, DAOs, nonprofits, and sovereigns.</p>
 
-            <p>Instead of isolated datasets or single-asset trackers, this app merges asset-level and entity-level data into a unified analytics layer: multi-asset, multi-entity, and built for interaction. It enables cross-sectional and regional analysis of strategic crypto holdings with dynamic filters and interactive visuals, delivering actionable insights for institutional investors, finance professionals, and strategic observers.</p>
+            <p>Instead of single-asset databases, this app merges asset-level and entity-level crypto treasury data into a unified analytics layer. It enables cross-sectional and regional analysis of strategic crypto holdings with dynamic filters and interactive visuals. The <strong>Crypto Treasury Tracker</strong> is designed to deliver actionable insights for institutional investors, finance professionals, and strategic observers.</p>
 
             </div>
             """,
@@ -43,7 +43,7 @@ def render_about():
                 <li>Historic development of crypto reserve holdings</li>
                 <li>More nuanced reserve data: sector, purpose, NAV, % of total treasury, and more</li>
                 <li>Inclusion of new crypto assets, spot digital asset ETFs, and DeFi or smart contract-based treasuries</li>
-                <li>News and treasury announcements to track strategic moves</li>
+                <li>News and treasury announcements to track strategic moves in real time</li>
             </ul>
             </div>
             """,
