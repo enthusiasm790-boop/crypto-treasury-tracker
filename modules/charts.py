@@ -70,6 +70,17 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         hovertemplate="<b>%{hovertext}</b><br>%{customdata[0]}<extra></extra>"
     )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=30, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+
     fig.update_layout(
         geo=dict(
             showframe=False,
@@ -83,16 +94,6 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         height=500,
         coloraxis_colorbar=dict(title="Total USD"),
         font=dict(size=12),
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=0.15, y=0.1,
-                sizex=0.1, sizey=0.1,
-                xanchor="left", yanchor="bottom",
-                opacity=1,
-                layer="above"
-            )]
     )
 
 
@@ -140,24 +141,24 @@ def render_rankings(df, asset="BTC", by="units"):
         hovertemplate="%{customdata}<extra></extra>"
     ))
 
-
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=15, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+    
     fig.update_layout(
         height=240,
         title=f"Top 5 {asset} Treasury Holders",
         yaxis=dict(autorange="reversed", tickfont=dict(size=12), title_standoff=25),
         margin=dict(l=140, r=10, t=40, b=20),  # Uniform left margin
         font=dict(size=12),
-        hoverlabel=dict(align='left'),
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=0.85, y=0.1,
-                sizex=0.15, sizey=0.15,
-                xanchor="center", yanchor="middle",
-                opacity=1,
-                layer="above"
-            )]
+        hoverlabel=dict(align='left')
         )
 
     return fig
@@ -217,6 +218,17 @@ def holdings_by_entity_type_bar(df):
             yanchor='bottom'
         )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=15, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+
     fig.update_traces(
         hovertemplate="%{customdata[0]}<extra></extra>"
     )
@@ -241,17 +253,7 @@ def holdings_by_entity_type_bar(df):
         hoverlabel=dict(align='left'),
         xaxis_title="",
         yaxis_title="",
-        legend_title_text='',
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=1, y=1,
-                sizex=0.15, sizey=0.1,
-                xanchor="right", yanchor="top",
-                opacity=1,
-                layer="above"
-            )]
+        legend_title_text=''
     )
 
     return fig
@@ -277,6 +279,17 @@ def entity_type_distribution_pie(df):
         hovertemplate="<b>%{label}</b><br>Count: %{value}<extra></extra>"
     )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=15, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+
     fig.update_layout(
         legend=dict(
             orientation='h',
@@ -285,17 +298,7 @@ def entity_type_distribution_pie(df):
             xanchor='center',
             x=0.5
         ),
-        hoverlabel=dict(align='left') ,
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=0.5, y=0.5,
-                sizex=0.2, sizey=0.15,
-                xanchor="center", yanchor="middle",
-                opacity=1,
-                layer="above"
-            )]
+        hoverlabel=dict(align='left')
     )
 
     return fig
@@ -359,6 +362,16 @@ def top_countries_by_entity_count(df):
             yanchor='middle'
         )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=15, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
 
     # Step 6: Final layout adjustments
     fig.update_traces(
@@ -372,17 +385,7 @@ def top_countries_by_entity_count(df):
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
         yaxis=dict(categoryorder='total ascending', title="", tickfont=dict(size=14)),
         xaxis=dict(tickformat=',d', title=""),
-        showlegend=False,
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=0.9, y=0,
-                sizex=0.2, sizey=0.1,
-                xanchor="right", yanchor="bottom",
-                opacity=1,
-                layer="below"
-            )]
+        showlegend=False
     )
 
     return fig
@@ -446,6 +449,17 @@ def top_countries_by_usd_value(df):
             yanchor='middle'
         )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=15, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+
     # Step 6: Final layout adjustments
     fig.update_traces(
         hovertemplate="%{customdata[0]}<extra></extra>",
@@ -459,16 +473,6 @@ def top_countries_by_usd_value(df):
         yaxis=dict(categoryorder='total ascending', title=""),
         xaxis=dict(title=""),
         showlegend=False,
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=0.9, y=0,
-                sizex=0.2, sizey=0.1,
-                xanchor="right", yanchor="bottom",
-                opacity=1,
-                layer="below"
-            )]
     )
 
     return fig
@@ -548,6 +552,17 @@ def entity_ranking(df, by="USD", top_n=10):
             yanchor='bottom'
         )
 
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        x=0.5, y=0.5,                      # Center of chart
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=30, color="white"),
+        opacity=0.3,                       # Adjust for subtlety
+        xanchor="center",
+        yanchor="middle",
+    )
+
     fig.update_traces(
         textposition="none",
         hovertemplate="%{customdata[0]}<extra></extra>"
@@ -567,17 +582,7 @@ def entity_ranking(df, by="USD", top_n=10):
             x=0.5
         ),
         legend_title_text='',
-        hoverlabel=dict(align='left'),
-        images=[
-            dict(
-                source=f"data:image/svg+xml;base64,{logo_b64}",
-                xref="paper", yref="paper",
-                x=1, y=1,
-                sizex=0.10, sizey=0.12,
-                xanchor="right", yanchor="top",
-                opacity=1,
-                layer="above"
-            )]
+        hoverlabel=dict(align='left')
     )
 
     return fig

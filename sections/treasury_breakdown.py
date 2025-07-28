@@ -12,6 +12,7 @@ def render_treasury_breakdown():
 
     df, last_updated = load_data()
     df_filtered = apply_filters(df)
+    print("number of countries:", df_filtered["Country"].nunique())
 
     # Summary KPIs
     with st.container(border=True):
