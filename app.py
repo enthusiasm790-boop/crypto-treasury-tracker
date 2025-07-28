@@ -2,7 +2,7 @@ import streamlit as st
 from sections import overview, ranking, treasury_breakdown, about
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
-st.sidebar.image("assets/ctt-logo-bold.svg", width=200)
+st.sidebar.image("assets/ctt-logo.svg", width=200)
 
 # Sidebar with logo and navigation
 #st.sidebar.title("Crypto Treasury Tracker")
