@@ -164,6 +164,117 @@ def render_rankings(df, asset="BTC", by="units"):
     return fig
 
 
+def historic_chart(df, by="USD"):
+    # Ensure numeric
+    df['USD Value'] = pd.to_numeric(df['USD Value'], errors='coerce')
+    if 'Holdings (Unit)' in df.columns:
+        df['Holdings (Unit)'] = pd.to_numeric(df['Holdings (Unit)'], errors='coerce')
+
+    value_col = 'USD Value' if by == "USD" else 'Holdings (Unit)'
+
+    # Aggregate monthly totals
+    grouped = (
+        df.groupby(['Date', 'Crypto Asset'])
+        .agg({value_col: 'sum', 'USD Value': 'sum'})
+        .reset_index()
+    )
+
+    # Build hover templates
+    if by == "USD":
+        breakdowns = (
+            grouped.groupby('Date')
+            .apply(lambda d: (
+                f"<b>{d.name.strftime('%B %Y')}</b><br>" +
+                "<br>".join([
+                    f"{row['Crypto Asset']}: <b>{format_usd(row['USD Value'])}</b>"
+                    for _, row in d.iterrows()
+                ]) +
+                f"<br>Total: <b>{format_usd(d['USD Value'].sum())}</b>"
+            ))
+            .to_dict()
+        )
+        grouped['Text'] = grouped[value_col].apply(format_usd)
+    else:
+        breakdowns = (
+            grouped.groupby('Date')
+            .apply(lambda d: (
+                f"<b>{d.name.strftime('%B %Y')}</b><br>" +
+                "<br>".join([
+                    f"{row['Crypto Asset']}: <b>{int(row[value_col]):,}</b>"
+                    for _, row in d.iterrows()
+                ]) +
+                f"<br>Total: <b>{int(d[value_col].sum()):,}</b>"
+            ))
+            .to_dict()
+        )
+        grouped['Text'] = grouped[value_col].apply(lambda x: f"{int(x):,}")
+
+    grouped['Custom Hover'] = grouped['Date'].map(breakdowns)
+
+    max_date = df['Date'].max()
+    grouped = grouped[grouped['Date'] <= max_date]
+
+    # Build figure
+    fig = px.bar(
+        grouped,
+        x='Date',
+        y=value_col,
+        color='Crypto Asset',
+        text='Text' if by != "USD" else None,
+        custom_data=['Custom Hover'],
+        barmode='stack',
+        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'}
+    )
+
+    fig.update_traces(
+        hovertemplate="%{customdata[0]}<extra></extra>",
+        textposition='outside'
+    )
+
+    # Add annotations only for USD
+    if by == "USD":
+        totals = grouped.groupby('Date')['USD Value'].sum()
+        for date, total in totals.items():
+            fig.add_annotation(
+                x=date,
+                y=total,
+                text=(f"${total/1_000_000_000:.1f}B" if total >= 1_000_000_000
+                      else f"${total/1_000_000:.1f}M"),
+                showarrow=False,
+                font=dict(size=14, color='white'),
+                yanchor='bottom'
+            )
+
+    # Watermark
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",
+        x=0.5, y=0.5,
+        xref="paper", yref="paper",
+        showarrow=False,
+        font=dict(size=30, color="white"),
+        opacity=0.3,
+        xanchor="center",
+        yanchor="middle",
+    )
+
+    fig.update_layout(
+        margin=dict(t=50, b=20),
+        legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
+        hoverlabel=dict(align='left'),
+        xaxis_title="",
+        yaxis_title="",
+        legend_title_text=''
+    )
+
+    fig.update_xaxes(
+        dtick="M1",
+        tickformat="%b %Y",
+     #   ticklabelmode="period"  # ensures labels like "Jul 2025" represent the period
+    )
+
+    return fig
+
+
 def holdings_by_entity_type_bar(df):
     # Step 1: Group by Entity Type and Crypto Asset
     grouped = (

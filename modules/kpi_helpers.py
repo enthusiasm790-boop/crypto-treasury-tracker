@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import plotly.graph_objects as go
 import base64
 
@@ -8,6 +9,16 @@ def load_base64_image(path):
         return base64.b64encode(f.read()).decode("utf-8")
 
 logo_b64 = load_base64_image("assets/ctt-symbol.svg")
+
+
+def format_change(value):
+    if value > 0:
+        return f"↗ {value:.1f}%", "green"
+    elif value < 0:
+        return f"↘ {value:.1f}%", "red"
+    else:
+        return f"{value:.1f}%", "white"
+
 
 def render_ctt_logo():
     html = f"""
@@ -146,3 +157,44 @@ def render_kpis(df):
                 st.plotly_chart(fig_btc)
             with donut_col2:
                 st.plotly_chart(fig_eth)
+
+
+def render_historic_kpis(df_filtered):
+    with st.container(border=True):
+        col1, col2, col3 = st.columns(3)
+
+        if not df_filtered.empty:
+            latest_year = df_filtered['Year'].max()
+            latest_month = df_filtered[df_filtered['Year'] == latest_year]['Month'].max()
+            prev_year, prev_month = (latest_year, latest_month - 1) if latest_month > 1 else (latest_year - 1, 12)
+
+            latest_total = df_filtered[(df_filtered['Year'] == latest_year) & (df_filtered['Month'] == latest_month)]['USD Value'].sum()
+            prev_total = df_filtered[(df_filtered['Year'] == prev_year) & (df_filtered['Month'] == prev_month)]['USD Value'].sum()
+            monthly_change = ((latest_total - prev_total) / prev_total * 100) if prev_total > 0 else 0
+
+            # YTD Change
+            prior_dec_total = df_filtered[(df_filtered['Year'] == latest_year - 1) & (df_filtered['Month'] == 12)]['USD Value'].sum()
+            ytd_change = ((latest_total - prior_dec_total) / prior_dec_total * 100) if prior_dec_total > 0 else 0
+
+            # CAGR
+            first_year = df_filtered['Year'].min()
+            first_month = df_filtered[df_filtered['Year'] == first_year]['Month'].min()
+            first_total = df_filtered[(df_filtered['Year'] == first_year) & (df_filtered['Month'] == first_month)]['USD Value'].sum()
+            n_months = (latest_year - first_year) * 12 + (latest_month - first_month)
+            cagr = (((latest_total / first_total) ** (12 / n_months)) - 1) * 100 if first_total > 0 and n_months > 0 else 0
+
+
+            # Display metrics
+            monthly_text, monthly_color = format_change(monthly_change)
+            ytd_text, ytd_color = format_change(ytd_change)
+            cagr_text, cagr_color = format_change(cagr)
+
+            col1.metric("Monthly Change", monthly_text, delta_color="normal", help="Percentage change in total crypto reserves (USD value) compared to the previous month’s holdings.")
+            col2.metric("YTD Change", ytd_text, delta_color="normal", help="Percentage change in total crypto reserves (USD value) since the end of the previous calendar year.")
+            col3.metric("CAGR", cagr_text, delta_color="normal", help="Compound annual growth rate of reserves in total crypto reserves (USD value).")
+
+            # Apply colors via markdown
+        else:
+            col1.metric("Monthly Change", "N/A")
+            col2.metric("YTD Change", "N/A")
+            col3.metric("CAGR", "N/A")

@@ -57,3 +57,33 @@ def load_data():
     df["USD Value"] = df.apply(lambda x: x["Holdings (Unit)"] * (BTC_PRICE if x["Crypto Asset"] == "BTC" else ETH_PRICE), axis=1)
 
     return df, meta
+
+# Function to get historic treasury data from Google master sheets
+def load_historic_data():
+    BTC_PRICE, ETH_PRICE = get_prices()
+    
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    service_account_info = st.secrets["gcp_service_account"]
+    creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("master_table_v01")
+
+    historic_btc_data = pd.DataFrame(sheet.worksheet("historic_btc").get_all_records())
+    historic_eth_data = pd.DataFrame(sheet.worksheet("historic_eth").get_all_records())
+
+    df = pd.concat([historic_btc_data, historic_eth_data], ignore_index=True)
+    df = df[["Year", "Month", "Crypto Asset", "Holdings (Unit)", "USD Value"]]
+    
+    df["Year"] = df["Year"].astype(int)
+    df = df[df["Year"] > 2023]
+    df["Month"] = df["Month"].astype(int)
+    
+    #Create new DateTime Variable
+    #df['Date'] = pd.to_datetime(df[['Year', 'Month']].assign(DAY=1)) + pd.offsets.MonthEnd(0)
+    #df['Date'] = pd.to_datetime(df[['Year', 'Month']].astype(str).agg('-'.join, axis=1)) + pd.offsets.MonthEnd(0)
+    df['Date'] = pd.to_datetime(df[['Year', 'Month']].assign(DAY=1))
+
+    df["Holdings (Unit)"] = df["Holdings (Unit)"].astype(int)
+    df["USD Value"] = df["USD Value"].astype(int)
+
+    return df
