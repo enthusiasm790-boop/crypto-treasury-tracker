@@ -143,12 +143,12 @@ def render_rankings(df, asset="BTC", by="units"):
 
     fig.add_annotation(
         text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.5, y=0.5,                      # Center of chart
+        x=0.95, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
         opacity=0.3,                       # Adjust for subtlety
-        xanchor="center",
+        xanchor="right",
         yanchor="middle",
     )
     
@@ -248,13 +248,13 @@ def historic_chart(df, by="USD"):
     # Watermark
     fig.add_annotation(
         text="Crypto Treasury Tracker",
-        x=0.5, y=0.5,
+        x=0.5, y=0.95,
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=30, color="white"),
         opacity=0.3,
         xanchor="center",
-        yanchor="middle",
+        yanchor="top",
     )
 
     fig.update_layout(
@@ -331,13 +331,13 @@ def holdings_by_entity_type_bar(df):
 
     fig.add_annotation(
         text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.5, y=0.5,                      # Center of chart
+        x=0.5, y=0.95,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
         opacity=0.3,                       # Adjust for subtlety
         xanchor="center",
-        yanchor="middle",
+        yanchor="top",
     )
 
     fig.update_traces(
@@ -475,7 +475,7 @@ def top_countries_by_entity_count(df):
 
     fig.add_annotation(
         text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.5, y=0.5,                      # Center of chart
+        x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
@@ -562,7 +562,7 @@ def top_countries_by_usd_value(df):
 
     fig.add_annotation(
         text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.5, y=0.5,                      # Center of chart
+        x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
