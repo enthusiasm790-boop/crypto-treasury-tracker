@@ -6,7 +6,7 @@ st.sidebar.image("assets/ctt-logo.svg", width=200)
 
 # Sidebar with logo and navigation
 #st.sidebar.title("Crypto Treasury Tracker")
-st.sidebar.caption("_Monitor Strategic Crypto Reserves—All in One Place!_")
+st.sidebar.caption("_Track Strategic Crypto Reserves—All in One Place!_")
 
 section = st.sidebar.radio("Crypto Treasury Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
 
