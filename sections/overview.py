@@ -15,6 +15,12 @@ def load_base64_image(path):
 
 logo_b64 = load_base64_image("assets/ctt-symbol.svg")
 
+# Supply column row-wise
+supply_caps = {
+    "BTC": 20_000_000,  
+    "ETH": 120_000_000
+}
+
 def render_header(BTC_PRICE, ETH_PRICE, last_updated):
     # Resolve absolute paths to asset images
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -104,15 +110,27 @@ def render_overview():
     table["Holdings (Unit)"] = table["Holdings (Unit)"].round(0)
     table["USD Value"] = table["USD Value"].round(0)
 
+    # Add % of Supply Column
+    table["% of Supply"] = table.apply(lambda row: row["Holdings (Unit)"] / supply_caps.get(row["Crypto Asset"], 1) * 100, axis=1)
+    table["% of Supply"] = table["% of Supply"].round(2)
+
+    # Reorder columns: put "% of Supply" right after "Holdings (Unit)"
+    cols = list(table.columns)
+
+    if "Holdings (Unit)" in cols and "% of Supply" in cols:
+        # Remove "% of Supply" and reinsert it after "Holdings (Unit)"
+        cols.remove("% of Supply")
+        insert_pos = cols.index("Holdings (Unit)") + 1
+        cols.insert(insert_pos, "% of Supply")
+        table = table[cols]
+
     row_count = st.selectbox("Rows to display", options=[5, 10, 25, 50, 100], index=1)
 
     # Display as interactive dataframe (sortable, scrollable)
     st.dataframe(table.head(row_count),
         column_config={
-            "USD Value": st.column_config.NumberColumn(
-                "USD Value",
-                format="$%d",
-            )
+            "USD Value": st.column_config.NumberColumn("USD Value",format="$%d"),
+            "% of Supply": st.column_config.NumberColumn("% of Supply", format="%.2f%%"),
         },
         use_container_width=True
     )
