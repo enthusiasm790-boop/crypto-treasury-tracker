@@ -5,10 +5,10 @@ st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
 st.sidebar.image("assets/ctt-logo.svg", width=200)
 
 # Sidebar with logo and navigation
-#st.sidebar.title("Crypto Treasury Tracker")
-st.sidebar.caption("_Track Strategic Crypto Reserves—All in One Place!_")
+st.sidebar.subheader("_Track Strategic Crypto Reserves—All in One Place!_")
+#st.sidebar.markdown("---")
 
-section = st.sidebar.radio("Crypto Treasury Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
+section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
 
 st.markdown(
     """
@@ -36,8 +36,13 @@ if section == "ℹ️ About":
 
 # Support
 st.sidebar.markdown("---")
-st.sidebar.markdown("Support this project ❤️")
-#st.sidebar.image("assets/qrcode_test.png", width=100)
+st.sidebar.subheader("Support this project ❤️")
+
+st.sidebar.markdown(
+    "<p style='font-size: 0.7rem; color: white;'>"
+    "Help keeping the Tracker running & updated."
+    "</p>", unsafe_allow_html=True)
+
 st.sidebar.markdown(
     "<p style='font-size: 0.7rem; color: white;'>"
     "BTC: bc1pujcv929agye4w7fmppkt94rnxf6zfv3c7zpc25lurv7rdtupprrsxzs5g6"
@@ -53,19 +58,25 @@ st.sidebar.markdown(
     "SOL: 3JWdqYuy2cvMVdRbvXrQnZvtXJStBV5ooQ3QdqemtScQ"
     "</p>", unsafe_allow_html=True)
 
+st.sidebar.markdown(
+    """
+    <p style='font-size: 0.7rem; color: white;'>
+    Prefer fiat? <a href="https://buymeacoffee.com/cryptotreasurytracker" target="_blank">Buy Me a Coffee</a>
+    </p>
+    """, 
+unsafe_allow_html=True)
+
 
 # External Links / Contact
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "<p style='font-size: 0.85rem; color: white;'>"
-    #"<a href='https://x.com/yourhandle' target='_blank'>X</a> • "
-    "<a href='https://www.linkedin.com/in/benjaminschellinger/' target='_blank'>LinkedIn</a> • "
+    "<a href='https://www.linkedin.com/in/benjaminschellinger/' target='_blank'>LinkedIn</a> | "
     "<a href='https://digitalfinancebriefing.substack.com/' target='_blank'>Blog</a>"
     "</p>", unsafe_allow_html=True)
 
-
-# Version and brand footer (light gray, small font)
-st.sidebar.markdown("---")
+# Version and brand footer
+#st.sidebar.markdown("---")
 st.sidebar.markdown(
     "<p style='font-size: 0.75rem; color: gray;'>"
     "v0.1 • © 2025 Crypto Treasury Tracker"

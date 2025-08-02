@@ -23,6 +23,7 @@ def render_about():
             """,
             unsafe_allow_html=True
         )
+
     # Box 2: Data Sources & Update Logic
     with st.container(border=True):
         st.markdown(
@@ -59,19 +60,31 @@ def render_about():
             """
             <h5 style="margin-top: 0;">Support & Attribution</h4>
 
-            <p>If you like the <strong>Crypto Treasury Tracker</strong> and want to keep it going, feel free to chip in and support the project :)</p>
+            <p>Your support helps keep the Tracker running, cover server costs, and fund ongoing updates.</p>
             <ul style="margin-top: 0; font-size: 0.9rem;">
               <li>BTC: bc1pujcv929agye4w7fmppkt94rnxf6zfv3c7zpc25lurv7rdtupprrsxzs5g6</li>
               <li>ETH: 0xe1b0Ae7b8496450ea09e60b110C2665ba0CB888f</li>
               <li>SOL: 3JWdqYuy2cvMVdRbvXrQnZvtXJStBV5ooQ3QdqemtScQ</li>
-              <li>Prefer fiat? <a href="https://buymeacoffee.com/cryptotreasurytracker" target="_blank">Buy Me a Coffee</a>.</li>
+              <li>Prefer fiat? <a href="https://buymeacoffee.com/cryptotreasurytracker" target="_blank">Buy Me a Coffee</a></li>
             </ul>
 
-            When using data, graphs, or insights from the <strong>Crypto Treasury Tracker</strong>, please cite as follows:<br>
+            When using data, visuals, or insights from the <strong>Crypto Treasury Tracker</strong>, please cite as follows:<br>
             Crypto Treasury Tracker by Benjamin Schellinger, PhD (2025), url: https://crypto-treasury-tracker.streamlit.app</br>
             </p>
 
             <p><strong>Feedback or collaboration?</strong> Connect via <a href="https://www.linkedin.com/in/benjaminschellinger/" target="_blank">LinkedIn</a>.</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # Box 5: Blog
+    with st.container(border=True):
+        st.markdown(
+            """
+            <h5 style="margin-top: 0;">Further Insights</h4>
+
+            <p>For deeper analysis and insights on digital asset markets, view the <a href="https://digitalfinancebriefing.substack.com/ target="_blank">Digital Finance Briefing</a>.</p>
             </div>
             """,
             unsafe_allow_html=True
