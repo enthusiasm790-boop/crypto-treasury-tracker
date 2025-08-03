@@ -136,4 +136,4 @@ def render_overview():
     )
  
     # Last update info
-    st.caption("*Last treasury data base update: July 23, 2025*")
+    st.caption("*Last treasury data base update: August 3, 2025*")
