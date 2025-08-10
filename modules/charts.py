@@ -2,11 +2,7 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.colors import qualitative
-from modules.kpi_helpers import load_base64_image
-
-
-logo_b64 = load_base64_image("assets/ctt-symbol.svg")
-
+import streamlit as st
 
 def format_usd(value):
     if value >= 1_000_000_000:
@@ -20,19 +16,45 @@ def format_usd(value):
 
 
 def render_world_map(df, asset_filter, type_filter, value_range_filter):
-    # Apply filters to raw data
+
     filtered = df.copy()
+
+    # Asset filter accepts list or 'All'
     if asset_filter != "All":
-        filtered = filtered[filtered["Crypto Asset"] == asset_filter]
+        if isinstance(asset_filter, list):
+            if len(asset_filter) == 0:
+                # nothing selected, return an empty chart-friendly frame
+                filtered = filtered.iloc[0:0]
+            else:
+                filtered = filtered[filtered["Crypto Asset"].isin(asset_filter)]
+        else:
+            filtered = filtered[filtered["Crypto Asset"] == asset_filter]
+
+    if isinstance(asset_filter, list) and len(asset_filter) == 0:
+        st.info("No data for the current filters.")
+        return None
+
+    
+    # Entity type
     if type_filter != "All":
         filtered = filtered[filtered["Entity Type"] == type_filter]
 
+    # Guard 1 empty after filtering
+    if filtered.empty:
+        st.info("No data for the current filters.")
+        return None
+    
     # Group first
     grouped = filtered.groupby("Country").agg(
         Total_USD=("USD Value", "sum"),
         Entity_Count=("Entity Name", "nunique"),
         Avg_Holdings=("USD Value", "mean")
     ).reset_index()
+
+    # Guard 2 empty after grouping
+    if grouped.empty:
+        st.info("No data for the current filters.")
+        return None
 
     # Value range filter (now on grouped data)
     if value_range_filter == "0–100M":
@@ -42,6 +64,45 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     elif value_range_filter == ">1B":
         grouped = grouped[grouped["Total_USD"] >= 1_000_000_000]
 
+    # Guard 3 empty after value-bucket
+    if grouped.empty:
+        st.info("No data for the current filters.")
+        return None
+    
+    # per-country per-asset breakdown + share of global 
+    assets_in_scope = list(filtered["Crypto Asset"].dropna().unique())
+
+    # Global USD across all selected assets/types (for % of global)
+    total_global_usd = float(filtered["USD Value"].sum())
+
+    # Per-country, per-asset aggregation
+    per_country_asset = (
+        filtered.groupby(["Country", "Crypto Asset"])
+        .agg(Units=("Holdings (Unit)", "sum"), USD=("USD Value", "sum"))
+        .reset_index()
+    )
+
+    # Map country -> HTML lines for hover
+    def fmt_units(x: float) -> str:
+        return f"{int(x):,}" if x >= 1 else f"{x:,.2f}"
+
+    lines_by_country = {}
+    for country in grouped["Country"]:
+        rows = per_country_asset[per_country_asset["Country"] == country]
+        lines = []
+        # keep the order of the assets actually in scope
+        for asset in assets_in_scope:
+            r = rows[rows["Crypto Asset"] == asset]
+            if not r.empty:
+                u = float(r["Units"].iloc[0])
+                usd = float(r["USD"].iloc[0])
+                lines.append(f"{asset}: <b>{fmt_units(u)}</b> ({format_usd(usd)})")
+        lines_by_country[country] = "<br>".join(lines) if lines else "—"
+
+    grouped["PerAssetBreakdown"] = grouped["Country"].map(lines_by_country)
+    grouped["Share_Global"] = grouped["Total_USD"] / total_global_usd if total_global_usd > 0 else 0.0
+    grouped["Formatted_Share_Global"] = grouped["Share_Global"].apply(lambda x: f"{x:.1%}")
+    
     # Format values for display
     grouped["Formatted_Total_USD"] = grouped["Total_USD"].apply(format_usd)
     grouped["Formatted_Avg_Holdings"] = grouped["Avg_Holdings"].apply(format_usd)
@@ -49,8 +110,10 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     # Prepare custom hover data columns
     grouped["Custom_Hover"] = (
         "Total Reserves: " + grouped["Formatted_Total_USD"] +
+        "<br>Share of Global: " + grouped["Formatted_Share_Global"] +
+        "<br>Avg. Reserve per Entity: " + grouped["Formatted_Avg_Holdings"] +
         "<br>Entities Reporting: " + grouped["Entity_Count"].astype(str) +
-        "<br>Average Reserve per Entity: " + grouped["Formatted_Avg_Holdings"]
+        "<br><br><b>By Asset</b><br>" + grouped["PerAssetBreakdown"]
     )
 
     # Create choropleth
@@ -492,7 +555,7 @@ def top_countries_by_entity_count(df):
     )
 
     fig.update_layout(
-        height=365,
+        height=394,
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
         yaxis=dict(categoryorder='total ascending', title="", tickfont=dict(size=14)),
         xaxis=dict(tickformat=',d', title=""),
@@ -579,7 +642,7 @@ def top_countries_by_usd_value(df):
     )
 
     fig.update_layout(
-        height=365,
+        height=394,
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
         yaxis=dict(categoryorder='total ascending', title=""),
         xaxis=dict(title=""),

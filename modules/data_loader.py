@@ -1,39 +1,49 @@
 import streamlit as st
-import pandas as pd
-import gspread
-import requests
-import time
+import json, os, time, requests, gspread, pandas as pd
 from google.oauth2.service_account import Credentials
 
 
-# Function to get live prices from CoinGecko
-@st.cache_data(ttl=3600)  # cache for 60 minutes (3600 seconds)
+# Function to get real-time price feed from CoinGecko, incl. fallback option
+FILENAME = "data/last_prices.json"
 
+def load_last_prices():
+    if os.path.exists(FILENAME):
+        with open(FILENAME, "r") as f:
+            return json.load(f)
+    else:
+        return {"btc": 115_000, "eth": 3_500}
+
+def save_last_prices(btc, eth):
+    with open(FILENAME, "w") as f:
+        json.dump({"btc": btc, "eth": eth}, f)
+
+@st.cache_data(ttl=3600)
 def get_prices():
+
     url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {
-        "ids": "bitcoin,ethereum",
-        "vs_currencies": "usd"
-    }
-    response = requests.get(url, params=params)
-    response.raise_for_status()
+    params = {"ids": "bitcoin,ethereum", "vs_currencies": "usd"}
+    last = load_last_prices()
 
-    try:
-        prices = response.json()
-        btc_price = int(prices["bitcoin"]["usd"])
-        eth_price = int(prices["ethereum"]["usd"])
-
-    except Exception as e:
-        st.error(f"Failed to fetch prices: {e}")
-
-    return btc_price, eth_price
-
-
-# Function to get raw treasury data from Google master sheets
-def load_data():
-    BTC_PRICE, ETH_PRICE = get_prices()
-    print(f"Current BTC/USD: {BTC_PRICE}, \nCurrent ETH/USD: {ETH_PRICE}")
+    for attempt in range(3):
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            prices = response.json()
+            btc_price = int(prices["bitcoin"]["usd"])
+            eth_price = int(prices["ethereum"]["usd"])
+            save_last_prices(btc_price, eth_price)
+            print(f"Current BTC/USD: {btc_price}, Current ETH/USD: {eth_price}")
+            return btc_price, eth_price
+        except:
+            time.sleep(5)
     
+    st.warning("CoinGecko API unreachable. Showing last saved prices.")
+
+    return last["btc"], last["eth"]
+
+# Function to get raw treasury data from master sheets
+def load_units():
+
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     service_account_info = st.secrets["gcp_service_account"]
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
@@ -42,8 +52,6 @@ def load_data():
 
     btc_data = pd.DataFrame(sheet.worksheet("aggregated_btc_data").get_all_records())
     eth_data = pd.DataFrame(sheet.worksheet("aggregated_eth_data").get_all_records())
-    #meta = sheet.worksheet("metadata").cell(1,1).value
-    meta = "July 23, 2025"
 
     df = pd.concat([btc_data, eth_data], ignore_index=True)
     df = df[["Entity Name", "Entity Type", "Country", "Crypto Asset", "Holdings (Unit)"]]
@@ -54,13 +62,20 @@ def load_data():
         .str.replace(",", ".", regex=False)  # convert decimal comma to dot
         .astype(float)
     )
-    df["USD Value"] = df.apply(lambda x: x["Holdings (Unit)"] * (BTC_PRICE if x["Crypto Asset"] == "BTC" else ETH_PRICE), axis=1)
 
-    return df, meta
+    return df
 
-# Function to get historic treasury data from Google master sheets
+def attach_usd_values(df_units, btc_price, eth_price):
+    df = df_units.copy()
+    df["USD Value"] = df.apply(
+        lambda x: x["Holdings (Unit)"] * (btc_price if x["Crypto Asset"] == "BTC" else eth_price),
+        axis=1,
+    )
+    return df
+
+# Function to get historic treasury data from master sheets
+@st.cache_data(ttl=900, show_spinner=False)
 def load_historic_data():
-    BTC_PRICE, ETH_PRICE = get_prices()
     
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     service_account_info = st.secrets["gcp_service_account"]
@@ -77,10 +92,6 @@ def load_historic_data():
     df["Year"] = df["Year"].astype(int)
     df = df[df["Year"] > 2023]
     df["Month"] = df["Month"].astype(int)
-    
-    #Create new DateTime Variable
-    #df['Date'] = pd.to_datetime(df[['Year', 'Month']].assign(DAY=1)) + pd.offsets.MonthEnd(0)
-    #df['Date'] = pd.to_datetime(df[['Year', 'Month']].astype(str).agg('-'.join, axis=1)) + pd.offsets.MonthEnd(0)
     df['Date'] = pd.to_datetime(df[['Year', 'Month']].assign(DAY=1))
 
     df["Holdings (Unit)"] = df["Holdings (Unit)"].astype(int)

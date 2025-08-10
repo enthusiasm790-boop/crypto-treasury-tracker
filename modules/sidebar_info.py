@@ -1,0 +1,106 @@
+import streamlit as st
+import base64, mimetypes
+from sections import overview, historic, ranking, treasury_breakdown, about
+from modules.ui import render_header, render_subscribe_cta, render_support
+
+
+def render_sidebar():
+
+    st.sidebar.image("assets/ctt-logo.svg", width=250)
+    st.sidebar.subheader("_Track Strategic Crypto Reserves—All in One Place!_")
+
+    # global top header on every page
+    render_header()
+
+    # Crypto Reserve Report Link
+    render_subscribe_cta()
+
+    # section switcher
+    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "collapsed")
+
+    # --- Reset filters ---
+    if st.sidebar.button("Reset Filters", type="primary", use_container_width=True):
+        # state defaults
+        st.session_state["flt_assets"] = st.session_state["opt_assets"]
+        st.session_state["flt_entity_type"] = "All"
+        st.session_state["flt_country"] = "All"
+        st.session_state["flt_value_range"] = "All"
+        st.session_state["flt_time_range"] = "All"
+
+        # clear UI widget keys so widgets visually reset
+        for k in [
+            "ui_assets", "ui_entity_type", "ui_country",
+            "ui_assets_map", "ui_entity_type_map", "ui_value_range_map",
+            "ui_assets_hist", "ui_time_range_hist",
+        ]:
+            if k in st.session_state:
+                del st.session_state[k]
+
+        st.rerun()
+
+    st.markdown(
+        """
+        <style>
+            .block-container {
+                padding-top: 3.8rem !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+    # Support
+    render_support()
+
+
+    # External Links / Contact
+    def data_uri(path):
+        mime, _ = mimetypes.guess_type(path)
+        b64 = base64.b64encode(open(path, "rb").read()).decode()
+        return f"data:{mime};base64,{b64}"
+
+    linkedin = data_uri("assets/linkedin-logo.png")
+    xicon = data_uri("assets/x-logo.svg")
+    linktree_icon = data_uri("assets/linktree-logo.svg")
+    substack_icon = data_uri("assets/substack-logo.png")
+
+    st.sidebar.markdown(
+        f"""
+        <div style="display:flex; gap:20px; align-items:center;">
+        <a href="https://www.linkedin.com/in/benjaminschellinger/" target="_blank" rel="LinkedIn">
+            <img src="{linkedin}" alt="LinkedIn" style="width:20px;height:20px;vertical-align:middle;">
+        </a>
+        <a href="https://x.com/CTTbyBen" target="_blank" rel="X">
+            <img src="{xicon}" alt="X" style="width:20px;height:20px;vertical-align:middle;">
+        </a>
+        <a href="https://linktr.ee/benjaminschellinger" target="_blank" rel="noopener" title="Linktree">
+            <img src="{linktree_icon}" alt="Linktree" style="width:20px;height:20px;vertical-align:middle;">
+        </a>
+        <a href="https://digitalfinancebriefing.substack.com/" target="_blank" rel="noopener" title="Substack">
+            <img src="{substack_icon}" alt="Linktree" style="width:20px;height:20px;vertical-align:middle;">
+        </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Version and brand footer
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(
+        "<p style='font-size: 0.75rem; color: gray;'>"
+        "v1.0 • © 2025 Crypto Treasury Tracker"
+        "</p>", unsafe_allow_html=True
+    )
+
+    # render selected page
+    if section == "🌎 Global Overview":
+        overview.render_overview()
+    if section == "📊 Historic Holdings":
+        historic.render_historic_holdings()
+    if section == "🥇 Entity Ranking":
+        ranking.render_entity_ranking()
+    if section == "🔍 Treasury Breakdown":
+        treasury_breakdown.render_treasury_breakdown()
+    if section == "ℹ️ About":
+        about.render_about()

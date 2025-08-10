@@ -1,11 +1,7 @@
 import streamlit as st
-import pandas as pd
-from modules.kpi_helpers import render_ctt_logo
 
 
 def render_about():
-
-    render_ctt_logo()
     
     # Box 1: Project Overview
     with st.container(border=True):
@@ -15,7 +11,7 @@ def render_about():
             
             <p>Crypto reserves held by public, private, and sovereign entities are increasingly shaping digital asset market structure and institutional narratives. Yet existing trackers remain fragmented—most cover only Bitcoin or a narrow subset.</p>
 
-            <p>The <strong>Crypto Treasury Tracker</strong> maps and visualizes <strong>ALL</strong> crypto reserves held by public companies, private firms, DAOs, nonprofits, and sovereigns.</p>
+            <p>The <strong>Crypto Treasury Tracker</strong> brings transparency to digital asset treasuries. It maps and visualizes <strong>all</strong> crypto reserves held by public companies, private firms, DAOs, nonprofits, and sovereigns.</p>
 
             <p>Instead of single‑asset databases, this app merges asset‑level and entity‑level crypto treasury data into a unified analytics layer. It enables cross‑sectional, regional, and historical analysis of strategic crypto holdings with dynamic filters and interactive visuals. The Crypto Treasury Tracker is designed to deliver actionable insights for institutional investors, finance professionals, and strategic observers.</p>
 

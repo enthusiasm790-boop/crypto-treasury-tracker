@@ -1,84 +1,50 @@
 import streamlit as st
-from sections import overview, historic, ranking, treasury_breakdown, about
+from modules import ui
+from modules.data_loader import get_prices, load_units, attach_usd_values, load_historic_data
+from modules.filters import _init_global_filters, _opts
+from modules.sidebar_info import render_sidebar
+
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
-st.sidebar.image("assets/ctt-logo.svg", width=200)
 
-# Sidebar with logo and navigation
-st.sidebar.subheader("_Track Strategic Crypto Reserves—All in One Place!_")
-#st.sidebar.markdown("---")
+# one-time init
+if "initialized" not in st.session_state:
+    loader = ui.show_global_loader("Initializing Crypto Treasury Tracker")
 
-section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"])
+    # fetch prices once with cache ttl
+    st.session_state["prices"] = get_prices()  # (btc, eth)
 
-st.markdown(
-    """
-    <style>
-        .block-container {
-            padding-top: 2.8rem !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+    # load units once with cache ttl
+    units_df = load_units()
+    st.session_state["units_df"] = units_df
 
+    # compute USD values once per price snapshot
+    btc, eth = st.session_state["prices"]
+    st.session_state["data_df"] = attach_usd_values(units_df, btc, eth)
+    _init_global_filters(st.session_state["data_df"])
 
-if section == "🌎 Global Overview":
-    overview.render_overview()
-if section == "📊 Historic Holdings":
-    historic.render_historic_holdings()
-if section == "🥇 Entity Ranking":
-    ranking.render_entity_ranking()
-if section == "🔍 Treasury Breakdown":
-    treasury_breakdown.render_treasury_breakdown()
-if section == "ℹ️ About":
-    about.render_about()
+    # canonical option lists used by ALL pages
 
+    st.session_state["opt_assets"] = _opts(st.session_state["data_df"]["Crypto Asset"])
+    st.session_state["opt_entity_types"] = ["All"] + _opts(st.session_state["data_df"]["Entity Type"])
+    st.session_state["opt_countries"] = ["All"] + _opts(st.session_state["data_df"]["Country"])
 
-# Support
-st.sidebar.markdown("---")
-st.sidebar.subheader("Support this project ❤️")
+    # make sure current selections are valid against canonical lists
+    if st.session_state.get("flt_entity_type") not in st.session_state["opt_entity_types"]:
+        st.session_state["flt_entity_type"] = "All"
+    if st.session_state.get("flt_country") not in st.session_state["opt_countries"]:
+        st.session_state["flt_country"] = "All"
+    if not st.session_state.get("flt_assets"):
+        st.session_state["flt_assets"] = st.session_state["opt_assets"]
+    else:
+        st.session_state["flt_assets"] = [
+            a for a in st.session_state["flt_assets"] if a in st.session_state["opt_assets"]
+        ] or st.session_state["opt_assets"]
 
-st.sidebar.markdown(
-    "<p style='font-size: 0.7rem; color: white;'>"
-    "Help keeping the Tracker running & updated."
-    "</p>", unsafe_allow_html=True)
+    # load historic data
+    st.session_state["historic_df"] = load_historic_data()
 
-st.sidebar.markdown(
-    "<p style='font-size: 0.7rem; color: white;'>"
-    "BTC: bc1pujcv929agye4w7fmppkt94rnxf6zfv3c7zpc25lurv7rdtupprrsxzs5g6"
-    "</p>", unsafe_allow_html=True)
+    st.session_state["initialized"] = True
+    loader.empty()
 
-st.sidebar.markdown(
-    "<p style='font-size: 0.7rem; color: white;'>"
-    "ETH: 0xe1b0Ae7b8496450ea09e60b110C2665ba0CB888f"
-    "</p>", unsafe_allow_html=True)
-
-st.sidebar.markdown(
-    "<p style='font-size: 0.7rem; color: white;'>"
-    "SOL: 3JWdqYuy2cvMVdRbvXrQnZvtXJStBV5ooQ3QdqemtScQ"
-    "</p>", unsafe_allow_html=True)
-
-st.sidebar.markdown(
-    """
-    <p style='font-size: 0.7rem; color: white;'>
-    Prefer fiat? <a href="https://buymeacoffee.com/cryptotreasurytracker" target="_blank">Buy Me a Coffee</a>
-    </p>
-    """, 
-unsafe_allow_html=True)
-
-
-# External Links / Contact
-st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "<p style='font-size: 0.85rem; color: white;'>"
-    "<a href='https://www.linkedin.com/in/benjaminschellinger/' target='_blank'>LinkedIn</a> | "
-    "<a href='https://digitalfinancebriefing.substack.com/' target='_blank'>Blog</a>"
-    "</p>", unsafe_allow_html=True)
-
-# Version and brand footer
-#st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "<p style='font-size: 0.75rem; color: gray;'>"
-    "v0.1 • © 2025 Crypto Treasury Tracker"
-    "</p>", unsafe_allow_html=True
-)
+render_sidebar()

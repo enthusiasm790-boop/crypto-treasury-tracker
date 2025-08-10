@@ -1,16 +1,15 @@
 import streamlit as st
-from modules.data_loader import load_data
 from modules.filters import apply_filters
 from modules.charts import entity_ranking
-from modules.kpi_helpers import render_ctt_logo
 
 
 def render_entity_ranking():
     
-    render_ctt_logo()
-
-    df, last_updated = load_data()
+    df = st.session_state["data_df"]
     df_filtered = apply_filters(df)
+    if df_filtered.empty:
+        st.info("No data for the current filters")
+        return
 
     with st.container(border=True):
         st.markdown("#### Top Entities by Crypto Treasuries", help="Rank leading entities by total crypto holdings (USD value) or number of units held.")
@@ -22,5 +21,3 @@ def render_entity_ranking():
         by = "USD" if metric == "USD Value" else "units"
         fig = entity_ranking(df_filtered, by=by, top_n=top_n)
         st.plotly_chart(fig, use_container_width=True)
-
-
