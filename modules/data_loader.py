@@ -6,7 +6,11 @@ from google.oauth2.service_account import Credentials
 # Function to get real-time price feed from CoinGecko, incl. fallback option
 FILENAME = "data/last_prices.json"
 
+def ensure_data_folder():
+    os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
+
 def load_last_prices():
+    ensure_data_folder()
     if os.path.exists(FILENAME):
         with open(FILENAME, "r") as f:
             return json.load(f)
@@ -14,6 +18,7 @@ def load_last_prices():
         return {"btc": 115_000, "eth": 3_500}
 
 def save_last_prices(btc, eth):
+    ensure_data_folder()
     with open(FILENAME, "w") as f:
         json.dump({"btc": btc, "eth": eth}, f)
 
