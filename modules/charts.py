@@ -713,7 +713,7 @@ def entity_ranking(df, by="USD", top_n=10):
         category_orders={'Entity Name': sorted_entities}
     )
 
-    totals = grouped.groupby('Entity Name')[value_col].sum()
+    totals = grouped.groupby('Entity Name', observed=False)[value_col].sum()
     for entity in totals.index:
         label = format_usd(totals[entity]) if by == "USD" else f"{int(totals[entity]):,}"
         fig.add_annotation(

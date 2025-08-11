@@ -15,7 +15,7 @@ def render_entity_ranking():
         st.markdown("#### Top Entities by Crypto Treasuries", help="Rank leading entities by total crypto holdings (USD value) or number of units held.")
 
         col_toggle, col_n, _ = st.columns([1, 1, 1])
-        metric = col_toggle.radio("", ["USD Value", "Unit Count"], index=0, horizontal=True)
+        metric = col_toggle.radio(" ", ["USD Value", "Unit Count"], index=0, horizontal=True, label_visibility="collapsed")
         top_n = col_n.number_input("Max. Entities Displayed", min_value=1, max_value=100, value=10, step=1)
 
         by = "USD" if metric == "USD Value" else "units"

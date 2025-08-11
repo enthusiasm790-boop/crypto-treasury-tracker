@@ -12,6 +12,7 @@ btc_b64 = load_base64_image(os.path.join(_ASSETS, "bitcoin-logo.png"))
 eth_b64 = load_base64_image(os.path.join(_ASSETS, "ethereum-logo.png"))
 cg_b64  = load_base64_image(os.path.join(_ASSETS, "coingecko-logo.png"))
 logo_b64 = load_base64_image(os.path.join(_ASSETS, "ctt-symbol.svg"))
+logo_loading = load_base64_image(os.path.join(_ASSETS, "ctt-logo.svg"))
 
 CTA_URL = "https://digitalfinancebriefing.substack.com/?utm_source=ctt_app&utm_medium=sidebar_cta&utm_campaign=subscribe"
 SUPPORT_URL = "https://buymeacoffee.com/cryptotreasurytracker"
@@ -49,6 +50,7 @@ def render_header():
 
 def render_subscribe_cta():
     st.sidebar.write(" ")
+    st.sidebar.write("")
     st.sidebar.link_button(
         "📥  Sign up for the monthly Crypto Treasury Report",
         CTA_URL,
@@ -57,42 +59,54 @@ def render_subscribe_cta():
         help="Click here to sign up for the monthly Crypto Treasury Report."
     )
     st.sidebar.write(" ")
+    st.sidebar.write(" ")
+
 
 def render_support():
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Support This Project ❤️")
-    
+    #st.sidebar.markdown("---")
+    st.sidebar.write(" ")
+    st.sidebar.write(" ")
+    st.sidebar.write(" ")
+    st.sidebar.write(" ")
+    st.sidebar.write(" ")
+
     st.sidebar.link_button(
-        "Click here to help keeping the Tracker running & updated.",
+        "Support This Project ❤️",
         SUPPORT_URL,
         type="secondary",
         use_container_width=True,
-        help="Click here to support."
+        help="Click here to help keeping the Tracker running & updated."
     )
 
     st.sidebar.write("")
     st.sidebar.write("")
-
+  
 
 def show_global_loader(msg="Loading data"):
+
     placeholder = st.empty()
     placeholder.markdown(
         f"""
         <div id="ctt-loader"
-             style="
-               position:fixed; inset:0; z-index:9999;
-               display:flex; align-items:center; justify-content:center;
-               background:rgba(0,0,0,0.55); backdrop-filter:saturate(140%) blur(2px);
-               ">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:14px;
-                      padding:18px 22px; border-radius:14px; background:#111; color:#fff;">
-            <div class="spinner" style="
-                  width:34px; height:34px; border-radius:50%;
-                  border:3px solid #444; border-top-color:#fff;
-                  animation:spin 0.9s linear infinite;"></div>
-            <div style="font-size:0.95rem; opacity:0.9;">{msg}</div>
+             style="position:fixed; inset:0; z-index:9999;
+                    display:flex; flex-direction:column; align-items:center; justify-content:center;
+                    gap:14px;
+                    background:rgba(0,0,0,0.55); backdrop-filter:saturate(140%) blur(2px);">
+
+          <div style="width:220px; height:120px; 
+                      border-radius:14px; background-color:#111;
+                      background-image:url('data:image/svg+xml;base64,{logo_loading}');
+                      background-repeat:no-repeat; background-position:center; background-size:contain;
+                      box-shadow:0 6px 20px rgba(0,0,0,0.35);">
           </div>
+
+          <div class="spinner" style="width:34px; height:34px; border-radius:50%;
+                                      border:3px solid #444; border-top-color:#fff;
+                                      animation:spin 0.9s linear infinite;"></div>
+
+          <div style="font-size:0.95rem; color:#fff; opacity:0.9;">{msg}</div>
         </div>
+
         <style>
           @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
         </style>

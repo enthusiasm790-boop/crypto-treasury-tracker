@@ -16,7 +16,8 @@ def render_sidebar():
     render_subscribe_cta()
 
     # section switcher
-    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "collapsed")
+    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "visible")
+    st.sidebar.write(" ")
 
     # --- Reset filters ---
     if st.sidebar.button("Reset Filters", type="primary", use_container_width=True):

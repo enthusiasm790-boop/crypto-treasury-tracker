@@ -15,7 +15,7 @@ def load_last_prices():
         with open(FILENAME, "r") as f:
             return json.load(f)
     else:
-        return {"btc": 115_000, "eth": 3_500}
+        return {"btc": 120_000, "eth": 4_000}
 
 def save_last_prices(btc, eth):
     ensure_data_folder()
@@ -42,7 +42,7 @@ def get_prices():
         except:
             time.sleep(5)
     
-    st.warning("CoinGecko API unreachable. Showing last saved prices.")
+    st.warning("CoinGecko API currently unreachable. Showing last saved prices.")
 
     return last["btc"], last["eth"]
 
