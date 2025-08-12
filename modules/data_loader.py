@@ -3,48 +3,84 @@ import json, os, time, requests, gspread, pandas as pd
 from google.oauth2.service_account import Credentials
 
 
-# Function to get real-time price feed from CoinGecko, incl. fallback option
-FILENAME = "data/last_prices.json"
+CENTRAL_FILE = "data/prices.json"
+LOCAL_FALLBACK_FILE = "data/last_prices.json"
 
-def ensure_data_folder():
-    os.makedirs(os.path.dirname(FILENAME), exist_ok=True)
+def ensure_dir_for(path: str):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
 
-def load_last_prices():
-    ensure_data_folder()
-    if os.path.exists(FILENAME):
-        with open(FILENAME, "r") as f:
+def load_last_prices(filename=None):
+    if filename is None:
+        filename = LOCAL_FALLBACK_FILE
+    ensure_dir_for(filename)
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
             return json.load(f)
-    else:
-        return {"btc": 120_000, "eth": 4_000}
+    return {"btc": 120_000, "eth": 4_000}
 
-def save_last_prices(btc, eth):
-    ensure_data_folder()
-    with open(FILENAME, "w") as f:
+def save_last_prices(btc: int, eth: int, filename=None):
+    if filename is None:
+        filename = LOCAL_FALLBACK_FILE
+    ensure_dir_for(filename)
+    with open(filename, "w") as f:
         json.dump({"btc": btc, "eth": eth}, f)
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300, show_spinner=False)  # 5 minutes
+def read_central_prices_from_sheet() -> dict | None:
+    """Read latest BTC/ETH USD from Google Sheet 'prices' worksheet."""
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
+        client = gspread.authorize(creds)
+        ws = client.open("master_table_v01").worksheet("prices")
+        rows = ws.get_all_records(value_render_option="UNFORMATTED_VALUE")  # [{'asset':'BTC','usd':65000.0,'timestamp':...}, ...]
+        if not rows:
+            return None
+        df = pd.DataFrame(rows)
+        if df.empty:
+            return None
+        # latest value per asset by timestamp
+        df = df.sort_values("timestamp")
+        latest = df.groupby("asset")["usd"].last().to_dict()
+        # normalize keys: {"BTC": 65000.0, "ETH": 3500.0}
+        return {k.upper(): float(v) for k, v in latest.items()}
+    except Exception:
+        return None
+
+@st.cache_data(ttl=3600, show_spinner=False)
 def get_prices():
+    """
+    Preferred order for Option 1:
+      1) Central Google Sheet (cached 5 min)
+      2) CoinGecko API (to refresh local fallback)
+      3) last_prices.json (final fallback)
+    Returns (btc_price:int, eth_price:int)
+    """
+    # 1) central sheet
+    central = read_central_prices_from_sheet()
+    if central and ("BTC" in central and "ETH" in central):
+        return int(central["BTC"]), int(central["ETH"])
 
-    url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {"ids": "bitcoin,ethereum", "vs_currencies": "usd"}
+    # 2) try API to refresh local fallback (useful locally or if sheet is momentarily unavailable)
+    try:
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": "bitcoin,ethereum", "vs_currencies": "usd"},
+            timeout=8,
+        )
+        r.raise_for_status()
+        js = r.json()
+        btc = int(js["bitcoin"]["usd"]); eth = int(js["ethereum"]["usd"])
+        save_last_prices(btc, eth)
+        return btc, eth
+    except Exception:
+        pass
+
+    # 3) last saved local file
     last = load_last_prices()
-
-    for attempt in range(3):
-        try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            prices = response.json()
-            btc_price = int(prices["bitcoin"]["usd"])
-            eth_price = int(prices["ethereum"]["usd"])
-            save_last_prices(btc_price, eth_price)
-            print(f"Current BTC/USD: {btc_price}, Current ETH/USD: {eth_price}")
-            return btc_price, eth_price
-        except:
-            time.sleep(5)
-    
-    st.warning("CoinGecko API currently unreachable. Showing last saved prices.")
-
-    return last["btc"], last["eth"]
+    return int(last.get("btc", 0)), int(last.get("eth", 0))
 
 # Function to get raw treasury data from master sheets
 def load_units():
