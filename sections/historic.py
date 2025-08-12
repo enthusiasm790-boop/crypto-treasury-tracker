@@ -2,6 +2,7 @@ import streamlit as st
 from modules.filters import apply_filters_historic
 from modules.charts import historic_chart
 from modules.kpi_helpers import render_historic_kpis
+from modules.ui import render_plotly
 
 
 def render_historic_holdings():
@@ -19,5 +20,5 @@ def render_historic_holdings():
 
         metric = st.radio("Display mode", ["USD Value", "Unit Count"], index=0, horizontal=True, label_visibility="collapsed")
         by = "USD" if metric == "USD Value" else "Holdings (Unit)"
-        fig = historic_chart(df_filtered, by=by)
-        st.plotly_chart(fig, use_container_width=True)
+
+        render_plotly(historic_chart(df_filtered, by=by), "historic_crypto_reserves")

@@ -134,12 +134,12 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text="Crypto Treasury Tracker",
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=30, color="white"),
-        opacity=0.3,                       # Adjust for subtlety
+        opacity=0.3,
         xanchor="center",
         yanchor="middle",
     )

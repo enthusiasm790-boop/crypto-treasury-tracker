@@ -114,3 +114,26 @@ def show_global_loader(msg="Loading data"):
         unsafe_allow_html=True,
     )
     return placeholder
+
+
+def render_plotly(fig, filename: str, use_container_width: bool = True, scale: int = 3, fmt: str = "png", extra_config: dict | None = None):
+    """
+    Render a Plotly figure with consistent high-res download settings.
+    - fig: Plotly figure object
+    - filename: default filename for downloaded image
+    - scale: resolution multiplier (higher = sharper for PNG)
+    - fmt: "png" or "svg"
+    """
+    config = {
+        "displaylogo": False,
+        "modeBarButtonsToAdd": ["toImage"],
+        "toImageButtonOptions": {
+            "format": fmt,
+            "filename": filename,
+            "scale": scale,
+        },
+    }
+    if extra_config:
+        config.update(extra_config)
+        
+    st.plotly_chart(fig, use_container_width=use_container_width, config=config)

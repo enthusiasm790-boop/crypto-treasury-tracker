@@ -5,6 +5,7 @@ from modules.kpi_helpers import render_kpis
 from modules.charts import render_world_map, render_rankings
 from modules.filters import _opts
 from datetime import datetime
+from modules.ui import render_plotly
 
 
 
@@ -66,8 +67,7 @@ def render_overview():
         else:
             fig = render_world_map(df, sel_assets, sel_et, sel_v)
             if fig is not None:
-                st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": False})
-
+                render_plotly(fig, "crypto_reserve_world_map", extra_config={"scrollZoom": False})
 
 
 
@@ -81,10 +81,10 @@ def render_overview():
         col_btc, col_eth = st.columns([1,1])
 
         with col_btc:
-            st.plotly_chart(render_rankings(df, asset="BTC", by=chart_mode.lower()), use_container_width=True)
+            render_plotly(render_rankings(df, asset="BTC", by=chart_mode.lower()), "top_5_btc_holders")
 
         with col_eth:
-            st.plotly_chart(render_rankings(df, asset="ETH", by=chart_mode.lower()), use_container_width=True)
+            render_plotly(render_rankings(df, asset="ETH", by=chart_mode.lower()), "top_5_eth_holders")
 
 
     # Table

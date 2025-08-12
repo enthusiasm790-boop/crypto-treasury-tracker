@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.filters import apply_filters
 from modules import charts
+from modules.ui import render_plotly
 
 def render_treasury_breakdown():
 
@@ -41,14 +42,15 @@ def render_treasury_breakdown():
     with row1_col1:
         with st.container(border=True):
             st.markdown("#### Holdings by Entity Type", help="USD value of selected crypto holdings by entity category.")
-            fig_bar = charts.holdings_by_entity_type_bar(df_filtered)
-            st.plotly_chart(fig_bar, use_container_width=True)
+
+            render_plotly(charts.holdings_by_entity_type_bar(df_filtered), "holdings_by_entity_type")
 
     with row1_col2:
         with st.container(border=True):
             st.markdown("#### Entity Type Distribution", help="Share of entities by type. Note: Other includes protocols, L1/L2 networks, AI agents, and community-led projects.")
-            fig_pie = charts.entity_type_distribution_pie(df_filtered)
-            st.plotly_chart(fig_pie, use_container_width=True)
+
+            render_plotly(charts.entity_type_distribution_pie(df_filtered), "entity_type_distribution")
+
 
     with row1_col3:
         with st.container(border=True):
@@ -61,4 +63,4 @@ def render_treasury_breakdown():
             else:
                 fig_country = charts.top_countries_by_usd_value(df_filtered)
 
-            st.plotly_chart(fig_country, use_container_width=True)
+            render_plotly(fig_country, "top_5_countries")
