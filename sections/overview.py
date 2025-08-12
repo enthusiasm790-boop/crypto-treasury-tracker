@@ -21,10 +21,7 @@ def render_overview():
     # KPIs
     render_kpis(df)
 
-    # Global Map
     with st.container(border=True):
-        st.markdown("#### Global Treasury Map", help="Geographic distribution of crypto reserves, filtered by crypto asset, entity type, and value range.")
-
         c1, c2, c3 = st.columns(3)
 
         asset_opts   = st.session_state["opt_assets"]
@@ -60,7 +57,10 @@ def render_overview():
             key="ui_value_range_map"   # no index on reruns
         )
         st.session_state["flt_value_range"] = sel_v
-
+    
+    # Global Map
+    with st.container(border=True):
+        st.markdown("#### Global Treasury Map", help="Geographic distribution of crypto reserves, filtered by crypto asset, entity type, and value range.")
 
         if not sel_assets:
             st.info("Select at least one Crypto Asset to display the map")
@@ -68,7 +68,6 @@ def render_overview():
             fig = render_world_map(df, sel_assets, sel_et, sel_v)
             if fig is not None:
                 render_plotly(fig, "crypto_reserve_world_map", extra_config={"scrollZoom": False})
-
 
 
     # Top 5 Rankings (BTC + ETH)

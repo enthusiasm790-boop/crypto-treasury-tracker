@@ -16,7 +16,7 @@ def render_sidebar():
     render_subscribe_cta()
 
     # section switcher
-    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Entity Ranking", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "visible")
+    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Leaderboard", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "visible")
     st.sidebar.write(" ")
 
     # --- Reset filters ---
@@ -99,7 +99,7 @@ def render_sidebar():
         overview.render_overview()
     if section == "📊 Historic Holdings":
         historic.render_historic_holdings()
-    if section == "🥇 Entity Ranking":
+    if section == "🥇 Leaderboard":
         ranking.render_entity_ranking()
     if section == "🔍 Treasury Breakdown":
         treasury_breakdown.render_treasury_breakdown()
