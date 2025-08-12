@@ -1,0 +1,44 @@
+name: Update Prices Hourly
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: prices-hourly
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install --upgrade pip && pip install requests gspread google-auth
+
+      # Write the service account JSON exactly as provided (preserves newlines)
+      - name: Write service account key to file
+        env:
+          GCP_SERVICE_ACCOUNT_JSON: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+        run: |
+          python - <<'PY'
+            import os, json, pathlib, sys
+            raw = os.environ.get("GCP_SERVICE_ACCOUNT_JSON")
+            if not raw:
+                print("Missing GCP_SERVICE_ACCOUNT_JSON", file=sys.stderr); sys.exit(1)
+            # Validate it's valid JSON
+            info = json.loads(raw)
+            pathlib.Path("service_account.json").write_text(raw)
+            print("Service account email:", info.get("client_email","(none)"))
+            print("Wrote service_account.json")
+            PY
+
+      - name: Fetch prices and update Google Sheet
+        env:
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+        run: python scripts/update_prices_to_sheet.py
