@@ -2,10 +2,8 @@
 import os, time, json, requests
 import gspread
 from google.oauth2.service_account import Credentials
+from modules.data_loader import ASSETS, COINGECKO_IDS
 
-# === Configure assets and CoinGecko mapping ===
-ASSETS = ["BTC", "ETH"]  
-COINGECKO_IDS = {"BTC": "bitcoin", "ETH": "ethereum"}
 
 # === Google Sheet target ===
 SHEET_NAME = "master_table_v01"

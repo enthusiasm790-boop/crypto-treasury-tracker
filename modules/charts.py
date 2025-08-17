@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.colors import qualitative
 import streamlit as st
+from modules.ui import COLORS
+
 
 def format_usd(value):
     if value >= 1_000_000_000:
@@ -154,9 +156,10 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         ),
         uirevision="static-map",  # Prevents user interaction from updating layout
         margin=dict(l=0, r=0, t=10, b=0),
-        height=500,
+        height=700,
         coloraxis_colorbar=dict(title="Total USD"),
         font=dict(size=12),
+        
     )
 
 
@@ -286,7 +289,7 @@ def historic_chart(df, by="USD"):
         text='Text' if by != "USD" else None,
         custom_data=['Custom Hover'],
         barmode='stack',
-        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'}
+        color_discrete_map=COLORS
     )
 
     fig.update_traces(
@@ -369,13 +372,9 @@ def holdings_by_entity_type_bar(df):
         color='Crypto Asset',
         barmode='stack',
         custom_data=['Custom Hover'],
-        color_discrete_map={
-            'BTC': '#f7931a',
-            'ETH': '#A9A9A9'
-        },
-        category_orders={'Entity Type': sorted_types}  # ✅ This line is key
+        color_discrete_map=COLORS,
+        category_orders={'Entity Type': sorted_types}
     )
-
 
     # Add total USD value as annotation above each full bar
     totals = grouped.groupby('Entity Type')['USD Value'].sum()
@@ -393,12 +392,12 @@ def holdings_by_entity_type_bar(df):
         )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.5, y=0.95,                      # Center of chart
+        text="Crypto Treasury Tracker",
+        x=0.5, y=0.95,
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
-        opacity=0.3,                       # Adjust for subtlety
+        opacity=0.3,
         xanchor="center",
         yanchor="top",
     )
@@ -709,7 +708,7 @@ def entity_ranking(df, by="USD", top_n=10):
         color='Crypto Asset',
         barmode='stack',
         custom_data=['Custom Hover'],
-        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'},
+        color_discrete_map=COLORS,
         category_orders={'Entity Name': sorted_entities}
     )
 

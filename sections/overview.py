@@ -6,14 +6,8 @@ from modules.charts import render_world_map, render_rankings
 from modules.filters import _opts
 from datetime import datetime
 from modules.ui import render_plotly
+from modules.data_loader import SUPPLY_CAPS
 
-
-
-# Supply column row-wise
-supply_caps = {
-    "BTC": 20_000_000,  
-    "ETH": 120_000_000
-}
 
 def render_overview():
     df = st.session_state["data_df"]
@@ -72,7 +66,7 @@ def render_overview():
 
     # Top 5 Rankings (BTC + ETH)
     with st.container(border=True):
-        st.markdown("#### Top 5 Crypto Holders", help="List of top 5 entities by crypto holdings, shown in units or USD value.")
+        st.markdown("#### Top 5 BTC & ETH Holders", help="List of top 5 entities by BTC & ETH holdings, shown in units or USD value.")
 
         # Toggle between Units and USD
         chart_mode = st.radio("Display mode", ["Units", "USD"], index=0, horizontal=True, label_visibility="collapsed")
@@ -98,7 +92,7 @@ def render_overview():
     table["USD Value"] = table["USD Value"].round(0)
 
     # Add % of Supply Column
-    table["% of Supply"] = table.apply(lambda row: row["Holdings (Unit)"] / supply_caps.get(row["Crypto Asset"], 1) * 100, axis=1)
+    table["% of Supply"] = table.apply(lambda row: row["Holdings (Unit)"] / SUPPLY_CAPS.get(row["Crypto Asset"], 1) * 100, axis=1)
     table["% of Supply"] = table["% of Supply"].round(2)
 
     # Reorder columns: put "% of Supply" right after "Holdings (Unit)"
@@ -123,4 +117,4 @@ def render_overview():
     )
  
     # Last update info
-    st.caption("*Last treasury data base update: August 3, 2025*")
+    st.caption("*Last treasury data base update: August 10, 2025*")

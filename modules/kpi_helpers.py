@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import base64
+from modules.ui import COLORS 
+from modules.data_loader import ASSETS
 
 
 def load_base64_image(path):
@@ -22,23 +24,31 @@ def format_change(value):
 
 # Summary KPIs
 def render_kpis(df):
-    # Compute values
-    df = df[(df['USD Value'] > 0) | (df['Holdings (Unit)'] > 0)]
 
-    total_usd = df["USD Value"].sum()
+    df = df[(df["USD Value"] > 0) | (df["Holdings (Unit)"] > 0)]
 
-    btc_df = df[df["Crypto Asset"] == "BTC"]
-    eth_df = df[df["Crypto Asset"] == "ETH"]
+    agg = (
+        df.groupby("Crypto Asset")
+        .agg(usd=("USD Value","sum"),
+            entities=("Entity Name","nunique"),
+            units=("Holdings (Unit)","sum"))
+        .reindex(ASSETS, fill_value=0)
+    )
 
-    btc_usd = btc_df["USD Value"].sum()
-    eth_usd = eth_df["USD Value"].sum()
+    total_usd = agg["usd"].sum()
+    btc_usd, eth_usd = agg.at["BTC","usd"], agg.at["ETH","usd"]
+    other_usd = agg.loc[~agg.index.isin(["BTC","ETH"]), "usd"].sum()
 
-    btc_entities = btc_df["Entity Name"].nunique()
-    eth_entities = eth_df["Entity Name"].nunique()
     total_entities = df["Entity Name"].nunique()
+    btc_entities, eth_entities = agg.at["BTC","entities"], agg.at["ETH","entities"]
+    other_entities = df[df["Crypto Asset"].isin([a for a in ASSETS if a not in ["BTC","ETH"]])]["Entity Name"].nunique()
 
-    btc_units = btc_df["Holdings (Unit)"].sum()
-    eth_units = eth_df["Holdings (Unit)"].sum()
+    btc_units, eth_units = agg.at["BTC","units"], agg.at["ETH","units"]
+    xrp_units, bnb_units, sol_units = agg.at["XRP","units"], agg.at["BNB","units"], agg.at["SOL","units"]
+
+    # percentages for USD stacked bar
+    usd_pct = {a: (agg.at[a,"usd"] / total_usd if total_usd else 0.0) for a in ASSETS}
+
 
     # KPI layout
     col1, col2, col3 = st.columns(3)
@@ -47,18 +57,20 @@ def render_kpis(df):
         with st.container(border=True):
             st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
 
-            # Custom progress bar styled as BTC (orange) + ETH (blue)
             btc_pct = btc_usd / total_usd
             eth_pct = eth_usd / total_usd
 
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_pct*100:.1f}%; background-color: #f7931a;'></div>
-                    <div style='width: {eth_pct*100:.1f}%; background-color: #A9A9A9;'></div>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                    {''.join(
+                        f"<div title='{a} ${agg.at[a,'usd']/1e9:.1f}B: ({usd_pct[a]*100:.1f}%)' "
+                        f"style='width:{usd_pct[a]*100:.1f}%;background-color:{COLORS[a]};'></div>"
+                        for a in ASSETS if usd_pct[a] > 0
+                    )}
                 </div>
-                <div style='margin-top: 8px; margin-bottom: 5px; font-size: 16px; color: #aaa;'>
-                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
+                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B | Other: ${other_usd/1e9:.1f}B
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -69,23 +81,30 @@ def render_kpis(df):
 
     with col2:
         with st.container(border=True):
-            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding BTC, ETH, or both directly, excluding ETFs and indirect vehicles. Note: some entities hold both and are only counted once.")
+            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding crypto assets directly, excluding ETFs and indirect vehicles. Note: some entities hold both and are only counted once.")
 
-            # BTC/ETH split bar (same color scheme)
-            btc_ent_pct = btc_entities / total_entities
-            eth_ent_pct = eth_entities / total_entities
+            ent_pct = {
+                "BTC": (btc_entities / total_entities if total_entities else 0.0),
+                "ETH": (eth_entities / total_entities if total_entities else 0.0),
+                # collapse all non‑BTC/ETH into one segment for readability
+                "Other": ((other_entities / total_entities) if total_entities else 0.0),
+            }
+            ENT_COUNTS = {"BTC": btc_entities, "ETH": eth_entities, "Other": other_entities}
+            ENT_COLORS = {"BTC": COLORS["BTC"], "ETH": COLORS["ETH"], "Other": "white"}
 
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_ent_pct*100:.1f}%; background-color: #f7931a;'></div>
-                    <div style='width: {eth_ent_pct*100:.1f}%; background-color: #A9A9A9;'></div>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                    {''.join(
+                        f"<div title='{k}: {ENT_COUNTS[k]} ({ent_pct[k]*100:.1f}%)' "
+                        f"style='width:{ent_pct[k]*100:.1f}%;background-color:{ENT_COLORS[k]};'></div>"
+                        for k in ["BTC","ETH","Other"] if ent_pct[k] > 0
+                    )}
                 </div>
-                <div style='margin-top: 8px; margin-bottom: 5px;font-size: 16px; color: #aaa;'>
-                    BTC: {btc_entities} | ETH: {eth_entities}
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
+                    BTC: {btc_entities} | ETH: {eth_entities} | Other: {other_entities}
                 </div>
-                """
-                ,
+                """,
                 unsafe_allow_html=True
             )
             
