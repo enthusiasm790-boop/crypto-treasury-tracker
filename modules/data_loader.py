@@ -144,44 +144,4 @@ def load_historic_data():
     client = gspread.authorize(creds)
     sheet = client.open("master_table_v01")
 
-    dfs = []
-    for a in ASSETS:  # e.g. ["BTC","ETH","XRP","BNB","SOL"]
-        ws_name = f"historic_{a.lower()}"
-        try:
-            df_a = pd.DataFrame(sheet.worksheet(ws_name).get_all_records())
-            if not df_a.empty:
-                dfs.append(df_a)
-        except gspread.WorksheetNotFound:
-            continue
-
-    if not dfs:
-        return pd.DataFrame(columns=["Year","Month","Crypto Asset","Holdings (Unit)","USD Value","Date"])
-
-    df = pd.concat(dfs, ignore_index=True)
-
-    # keep standard columns
-    cols = ["Year","Month","Crypto Asset","Holdings (Unit)","USD Value"]
-    df = df[cols]
-
-    # normalize asset codes
-    df["Crypto Asset"] = df["Crypto Asset"].astype(str).str.upper()
-
-    # numeric cleaning
-    df["Year"]  = pd.to_numeric(df["Year"], errors="coerce")
-    df["Month"] = pd.to_numeric(df["Month"], errors="coerce")
-    df = df[df["Year"] > 2023].dropna(subset=["Year","Month"])
-    df["Year"]  = df["Year"].astype(int)
-    df["Month"] = df["Month"].astype(int)
-
-    # parse unit values with EU-style separators
-    df["Holdings (Unit)"] = pd.to_numeric(
-        df["Holdings (Unit)"].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
-        errors="coerce"
-    )
-    df["USD Value"] = pd.to_numeric(df["USD Value"], errors="coerce")
-
-    # month start date
-    df["Date"] = pd.to_datetime({"year": df["Year"], "month": df["Month"], "day": 1}, errors="coerce")
-    df = df.dropna(subset=["Date"])
-
-    return df
+    d
