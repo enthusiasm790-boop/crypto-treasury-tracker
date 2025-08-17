@@ -6,24 +6,92 @@ from google.oauth2.service_account import Credentials
 CENTRAL_FILE = "data/prices.json"
 LOCAL_FALLBACK_FILE = "data/last_prices.json"
 
+ASSETS = [
+    "BTC",
+    "ETH",
+    #"XRP",
+    #"BNB",
+    "SOL",
+    #"SUI",
+    #"LTC"
+    ]
+
+COINGECKO_IDS = {
+    "BTC":"bitcoin", 
+    "ETH":"ethereum",
+    #"XRP":"ripple",
+    # "BNB":"binancecoin",
+    "SOL":"solana",
+    #"SUI": "sui",
+    # "LTC":"litecoin"
+    }
+
+DEFAULT_PRICES = {
+    "BTC":120_000,
+    "ETH":4_000,
+    #"XRP":3.50,
+    #"BNB":700.00,
+    "SOL":150.00, 
+    #"SUI":3.50, 
+    #"LTC":120.00
+    }
+
+# Supply column row-wise (retrieved from Coingecko)
+SUPPLY_CAPS = {
+    "BTC": 20_000_000,  
+    "ETH": 120_000_000,
+    #"XRP": 60_000_000_000,
+    #"BNB": 140_000_000,
+    "SOL": 540_000_000,
+    #"SUI": 3_500_000_000,
+    #"LTC": 76_000_000,
+    }
+
+
+def _batch_get_tables(sheet, ranges):
+    """Return a list of tables (each as a list-of-rows) for the given A1 ranges.
+    Tries batch_get (one API call). Falls back to values_batch_get. As a last resort,
+    returns [] so caller can decide to skip or do per-sheet reads."""
+    # Newer gspread
+    try:
+        return sheet.batch_get(ranges, value_render_option="FORMATTED_VALUE")
+    except Exception:
+        pass
+    # Older gspread: values_batch_get
+    try:
+        resp = sheet.values_batch_get(ranges, params={"valueRenderOption": "FORMATTED_VALUE"})
+        return [vr.get("values", []) for vr in resp.get("valueRanges", [])]
+    except Exception:
+        return []
+
+def _df_from_table(rows):
+    if not rows:
+        return None
+    header, data = rows[0], rows[1:]
+    width = len(header)
+    # Right-pad or trim each row to match header width
+    data_fixed = [(r + [""] * (width - len(r)))[:width] for r in data]
+    return pd.DataFrame(data_fixed, columns=header)
+
 def ensure_dir_for(path: str):
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
 def load_last_prices(filename=None):
-    if filename is None:
-        filename = LOCAL_FALLBACK_FILE
+    filename = filename or LOCAL_FALLBACK_FILE
     ensure_dir_for(filename)
     if os.path.exists(filename):
         with open(filename, "r") as f:
-            return json.load(f)
-    return {"btc": 120_000, "eth": 4_000}
+            data = json.load(f)
+            return {k.upper(): float(v) for k, v in data.items()}
+    return DEFAULT_PRICES.copy()
 
-def save_last_prices(btc: int, eth: int, filename=None):
-    if filename is None:
-        filename = LOCAL_FALLBACK_FILE
+
+def save_last_prices(prices: dict, filename=None):
+    filename = filename or LOCAL_FALLBACK_FILE
     ensure_dir_for(filename)
+    out = {k.lower(): float(v) for k, v in prices.items() if k.upper() in ASSETS}
     with open(filename, "w") as f:
-        json.dump({"btc": btc, "eth": eth}, f)
+        json.dump(out, f)
 
 @st.cache_data(ttl=300, show_spinner=False)  # 5 minutes
 def read_central_prices_from_sheet() -> dict | None:
@@ -51,91 +119,124 @@ def read_central_prices_from_sheet() -> dict | None:
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def get_prices():
-    """
-    Preferred order for Option 1:
-      1) Central Google Sheet (cached 5 min)
-      2) CoinGecko API (to refresh local fallback)
-      3) last_prices.json (final fallback)
-    Returns (btc_price:int, eth_price:int)
-    """
-    # 1) central sheet
-    central = read_central_prices_from_sheet()
-    if central and ("BTC" in central and "ETH" in central):
-        return int(central["BTC"]), int(central["ETH"])
+    # 1 central sheet
+    central = read_central_prices_from_sheet()  # returns keys like BTC ETH
+    if central and all(a in central for a in ASSETS):
+        return tuple(float(central[a]) for a in ASSETS)
 
-    # 2) try API to refresh local fallback (useful locally or if sheet is momentarily unavailable)
+    # 2 CoinGecko API then persist to local
     try:
+        ids = ",".join(COINGECKO_IDS[a] for a in ASSETS)
         r = requests.get(
             "https://api.coingecko.com/api/v3/simple/price",
-            params={"ids": "bitcoin,ethereum", "vs_currencies": "usd"},
+            params={"ids": ids, "vs_currencies": "usd"},
             timeout=8,
         )
         r.raise_for_status()
         js = r.json()
-        btc = int(js["bitcoin"]["usd"]); eth = int(js["ethereum"]["usd"])
-        save_last_prices(btc, eth)
-        return btc, eth
+        prices = {a: float(js[COINGECKO_IDS[a]]["usd"]) for a in ASSETS}
+        save_last_prices(prices)
+        return tuple(prices[a] for a in ASSETS)
     except Exception:
         pass
 
-    # 3) last saved local file
+    # 3 local fallback
     last = load_last_prices()
-    return int(last.get("btc", 0)), int(last.get("eth", 0))
+    return tuple(float(last.get(a, 0.0)) for a in ASSETS)
 
 # Function to get raw treasury data from master sheets
 def load_units():
-
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
     service_account_info = st.secrets["gcp_service_account"]
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
     client = gspread.authorize(creds)
     sheet = client.open("master_table_v01")
 
-    btc_data = pd.DataFrame(sheet.worksheet("aggregated_btc_data").get_all_records())
-    eth_data = pd.DataFrame(sheet.worksheet("aggregated_eth_data").get_all_records())
+    ranges = [f"aggregated_{a.lower()}_data!A:Z" for a in ASSETS]  # e.g., aggregated_btc_data!A:Z
+    tables = _batch_get_tables(sheet, ranges)  # one API call
 
-    df = pd.concat([btc_data, eth_data], ignore_index=True)
-    df = df[["Entity Name", "Entity Type", "Country", "Crypto Asset", "Holdings (Unit)"]]
+    dfs = []
+    for rows in tables:
+        if not rows:
+            continue
+        header, data = rows[0], rows[1:]
+        if not header or not data:
+            continue
+        df_a = _df_from_table(rows)
+        if df_a is not None and not df_a.empty:
+            dfs.append(df_a)
+
+    if not dfs:
+        return pd.DataFrame(columns=["Entity Name","Entity Type","Country","Crypto Asset","Holdings (Unit)"])
+
+    df = pd.concat(dfs, ignore_index=True)
+    df = df[["Entity Name","Entity Type","Country","Crypto Asset","Holdings (Unit)"]]
     df["Holdings (Unit)"] = (
-        df["Holdings (Unit)"]
-        .astype(str)
-        .str.replace(".", "", regex=False)  # remove thousand separators
-        .str.replace(",", ".", regex=False)  # convert decimal comma to dot
+        df["Holdings (Unit)"].astype(str)
+        .str.replace(".", "", regex=False)
+        .str.replace(",", ".", regex=False)
         .astype(float)
     )
-
+    df["Holdings (Unit)"] = pd.to_numeric(df["Holdings (Unit)"], errors="coerce").fillna(0.0)
     return df
 
-def attach_usd_values(df_units, btc_price, eth_price):
+
+def attach_usd_values(df_units: pd.DataFrame, prices_input):
+    # accept either tuple in ASSETS order or dict keyed by symbols
+    if isinstance(prices_input, tuple) or isinstance(prices_input, list):
+        price_map = dict(zip(ASSETS, map(float, prices_input)))
+    else:
+        price_map = {k.upper(): float(v) for k, v in prices_input.items()}
+
     df = df_units.copy()
-    df["USD Value"] = df.apply(
-        lambda x: x["Holdings (Unit)"] * (btc_price if x["Crypto Asset"] == "BTC" else eth_price),
-        axis=1,
-    )
+    df["USD Value"] = df["Crypto Asset"].map(price_map).fillna(0.0) * df["Holdings (Unit)"]
     return df
 
 # Function to get historic treasury data from master sheets
 @st.cache_data(ttl=900, show_spinner=False)
 def load_historic_data():
-    
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     service_account_info = st.secrets["gcp_service_account"]
     creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
     client = gspread.authorize(creds)
     sheet = client.open("master_table_v01")
 
-    historic_btc_data = pd.DataFrame(sheet.worksheet("historic_btc").get_all_records())
-    historic_eth_data = pd.DataFrame(sheet.worksheet("historic_eth").get_all_records())
+    ranges = [f"historic_{a.lower()}!A:Z" for a in ASSETS]  # e.g., historic_btc!A:Z
+    tables = _batch_get_tables(sheet, ranges)  # one API call
 
-    df = pd.concat([historic_btc_data, historic_eth_data], ignore_index=True)
-    df = df[["Year", "Month", "Crypto Asset", "Holdings (Unit)", "USD Value"]]
-    
-    df["Year"] = df["Year"].astype(int)
-    df = df[df["Year"] > 2023]
-    df["Month"] = df["Month"].astype(int)
-    df['Date'] = pd.to_datetime(df[['Year', 'Month']].assign(DAY=1))
+    dfs = []
+    for rows in tables:
+        if not rows:
+            continue
+        header, data = rows[0], rows[1:]
+        if not header or not data:
+            continue
+        df_a = _df_from_table(rows)
 
-    df["Holdings (Unit)"] = df["Holdings (Unit)"].astype(int)
-    df["USD Value"] = df["USD Value"].astype(int)
+        dfs.append(df_a)
 
+    if not dfs:
+        return pd.DataFrame(columns=["Year","Month","Crypto Asset","Holdings (Unit)","USD Value","Date"])
+
+    df = pd.concat(dfs, ignore_index=True)
+    df = df[["Year","Month","Crypto Asset","Holdings (Unit)","USD Value"]]
+
+    df["Crypto Asset"] = df["Crypto Asset"].astype(str).str.upper()
+    df["Year"]  = pd.to_numeric(df["Year"], errors="coerce")
+    df["Month"] = pd.to_numeric(df["Month"], errors="coerce")
+    df = df[df["Year"] > 2023].dropna(subset=["Year","Month"])
+
+    df["Holdings (Unit)"] = pd.to_numeric(
+        df["Holdings (Unit)"].astype(str)
+        .str.replace(".", "", regex=False)
+        .str.replace(",", ".", regex=False),
+        errors="coerce"
+    ).fillna(0.0)
+    df["USD Value"] = pd.to_numeric(df["USD Value"], errors="coerce").fillna(0.0)
+
+    df["Date"] = pd.to_datetime(
+        {"year": df["Year"].astype(int), "month": df["Month"].astype(int), "day": 1},
+        errors="coerce"
+    )
+    df = df.dropna(subset=["Date"])
     return df

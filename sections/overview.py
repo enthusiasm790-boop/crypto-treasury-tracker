@@ -12,8 +12,13 @@ from modules.ui import render_plotly
 # Supply column row-wise
 supply_caps = {
     "BTC": 20_000_000,  
-    "ETH": 120_000_000
-}
+    "ETH": 120_000_000,
+    #"XRP": 60_000_000_000,
+    #"BNB": 140_000_000,
+    "SOL": 540_000_000,
+    #"SUI": 3_500_000_000,
+    #"LTC": 76_000_000,
+    }
 
 def render_overview():
     df = st.session_state["data_df"]
@@ -72,7 +77,7 @@ def render_overview():
 
     # Top 5 Rankings (BTC + ETH)
     with st.container(border=True):
-        st.markdown("#### Top 5 Crypto Holders", help="List of top 5 entities by crypto holdings, shown in units or USD value.")
+        st.markdown("#### Top 5 BTC & ETH Holders", help="List of top 5 entities by BTC & ETH holdings, shown in units or USD value.")
 
         # Toggle between Units and USD
         chart_mode = st.radio("Display mode", ["Units", "USD"], index=0, horizontal=True, label_visibility="collapsed")
@@ -123,4 +128,4 @@ def render_overview():
     )
  
     # Last update info
-    st.caption("*Last treasury data base update: August 3, 2025*")
+    st.caption("*Last treasury data base update: August 17, 2025*")

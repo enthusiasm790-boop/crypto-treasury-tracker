@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 from plotly.colors import qualitative
 import streamlit as st
 
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+
 def format_usd(value):
     if value >= 1_000_000_000:
         return f"${value/1_000_000_000:.1f}B"
@@ -154,7 +156,7 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         ),
         uirevision="static-map",  # Prevents user interaction from updating layout
         margin=dict(l=0, r=0, t=10, b=0),
-        height=500,
+        height=700,
         coloraxis_colorbar=dict(title="Total USD"),
         font=dict(size=12),
     )
@@ -286,7 +288,7 @@ def historic_chart(df, by="USD"):
         text='Text' if by != "USD" else None,
         custom_data=['Custom Hover'],
         barmode='stack',
-        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'}
+        color_discrete_map=COLORS
     )
 
     fig.update_traces(
@@ -369,10 +371,7 @@ def holdings_by_entity_type_bar(df):
         color='Crypto Asset',
         barmode='stack',
         custom_data=['Custom Hover'],
-        color_discrete_map={
-            'BTC': '#f7931a',
-            'ETH': '#A9A9A9'
-        },
+        color_discrete_map=COLORS,
         category_orders={'Entity Type': sorted_types}  # ✅ This line is key
     )
 
@@ -709,7 +708,7 @@ def entity_ranking(df, by="USD", top_n=10):
         color='Crypto Asset',
         barmode='stack',
         custom_data=['Custom Hover'],
-        color_discrete_map={'BTC': '#f7931a', 'ETH': '#A9A9A9'},
+        color_discrete_map=COLORS,
         category_orders={'Entity Name': sorted_entities}
     )
 

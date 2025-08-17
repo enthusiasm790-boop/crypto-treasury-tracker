@@ -12,19 +12,17 @@ if "initialized" not in st.session_state:
     loader = ui.show_global_loader("Initializing Crypto Treasury Tracker")
 
     # fetch prices once with cache ttl
-    st.session_state["prices"] = get_prices()  # (btc, eth)
+    st.session_state["prices"] = get_prices()  # (BTC, ETH, XRP, BNB, SOL)
 
     # load units once with cache ttl
     units_df = load_units()
     st.session_state["units_df"] = units_df
 
     # compute USD values once per price snapshot
-    btc, eth = st.session_state["prices"]
-    st.session_state["data_df"] = attach_usd_values(units_df, btc, eth)
+    st.session_state["data_df"] = attach_usd_values(units_df, st.session_state["prices"])
     _init_global_filters(st.session_state["data_df"])
 
     # canonical option lists used by ALL pages
-
     st.session_state["opt_assets"] = _opts(st.session_state["data_df"]["Crypto Asset"])
     st.session_state["opt_entity_types"] = ["All"] + _opts(st.session_state["data_df"]["Entity Type"])
     st.session_state["opt_countries"] = ["All"] + _opts(st.session_state["data_df"]["Country"])

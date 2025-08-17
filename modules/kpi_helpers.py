@@ -4,6 +4,8 @@ import numpy as np
 import plotly.graph_objects as go
 import base64
 
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+
 
 def load_base64_image(path):
     with open(path, "rb") as f:
@@ -29,36 +31,51 @@ def render_kpis(df):
 
     btc_df = df[df["Crypto Asset"] == "BTC"]
     eth_df = df[df["Crypto Asset"] == "ETH"]
+    sol_df = df[df["Crypto Asset"] == "SOL"]
 
     btc_usd = btc_df["USD Value"].sum()
     eth_usd = eth_df["USD Value"].sum()
+    sol_usd = sol_df["USD Value"].sum()
 
     btc_entities = btc_df["Entity Name"].nunique()
     eth_entities = eth_df["Entity Name"].nunique()
+    sol_entities = sol_df["Entity Name"].nunique()
     total_entities = df["Entity Name"].nunique()
 
     btc_units = btc_df["Holdings (Unit)"].sum()
     eth_units = eth_df["Holdings (Unit)"].sum()
+    sol_units = sol_df["Holdings (Unit)"].sum()
 
     # KPI layout
     col1, col2, col3 = st.columns(3)
 
+
     with col1:
         with st.container(border=True):
-            st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto reserves across entities, based on live market pricing.")
+            st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto assets across entities, based on live market pricing.")
 
             # Custom progress bar styled as BTC (orange) + ETH (blue)
-            btc_pct = btc_usd / total_usd
-            eth_pct = eth_usd / total_usd
+            usd_pct = {
+                "BTC": btc_usd / total_usd if total_usd else 0.0,
+                "ETH": eth_usd / total_usd if total_usd else 0.0,
+                "SOL": sol_usd / total_usd if total_usd else 0.0,
+            }
 
+            COLORS = {"BTC": "#f7931a", "ETH": "#6F6F6F", "SOL": "#dc1fff"}
+
+            # Progress bar with hover tooltip
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_pct*100:.1f}%; background-color: #f7931a;'></div>
-                    <div style='width: {eth_pct*100:.1f}%; background-color: #A9A9A9;'></div>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                    {''.join(
+                        f"<div title='{a}: ${usd_val/1e9:.1f}B ({usd_pct[a]*100:.1f}%)' "
+                        f"style='width:{usd_pct[a]*100:.1f}%;background-color:{COLORS[a]};'></div>"
+                        for a, usd_val in [("BTC", btc_usd), ("ETH", eth_usd), ("SOL", sol_usd)]
+                        if usd_pct[a] > 0
+                    )}
                 </div>
-                <div style='margin-top: 8px; margin-bottom: 5px; font-size: 16px; color: #aaa;'>
-                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
+                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B | SOL: ${sol_usd/1e9:.1f}B
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -69,84 +86,107 @@ def render_kpis(df):
 
     with col2:
         with st.container(border=True):
-            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding BTC, ETH, or both directly, excluding ETFs and indirect vehicles. Note: some entities hold both and are only counted once.")
+            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding crypto assets directly, excluding ETFs and indirect vehicles. Note: some entities hold multiple crypto assets and are only counted once.")
 
-            # BTC/ETH split bar (same color scheme)
-            btc_ent_pct = btc_entities / total_entities
-            eth_ent_pct = eth_entities / total_entities
+            ent_pct = {
+                "BTC": (btc_entities / total_entities if total_entities else 0.0),
+                "ETH": (eth_entities / total_entities if total_entities else 0.0),
+                "SOL": (sol_entities / total_entities if total_entities else 0.0),
+            }
+            ENT_COUNTS = {"BTC": btc_entities, "ETH": eth_entities, "SOL": sol_entities}
+            ENT_COLORS = {"BTC": COLORS["BTC"], "ETH": COLORS["ETH"], "SOL": COLORS["SOL"]}
 
             st.markdown(
                 f"""
-                <div style='background-color: #1e1e1e; border-radius: 8px; height: 20px; width: 100%; display: flex; overflow: hidden;'>
-                    <div style='width: {btc_ent_pct*100:.1f}%; background-color: #f7931a;'></div>
-                    <div style='width: {eth_ent_pct*100:.1f}%; background-color: #A9A9A9;'></div>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                    {''.join(
+                        f"<div title='{k}: {ENT_COUNTS[k]} ({ent_pct[k]*100:.1f}%)' "
+                        f"style='width:{ent_pct[k]*100:.1f}%;background-color:{ENT_COLORS[k]};'></div>"
+                        for k in ["BTC","ETH","SOL"] if ent_pct[k] > 0
+                    )}
                 </div>
-                <div style='margin-top: 8px; margin-bottom: 5px;font-size: 16px; color: #aaa;'>
-                    BTC: {btc_entities} | ETH: {eth_entities}
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
+                    BTC: {btc_entities} | ETH: {eth_entities} | SOL: {sol_entities}
                 </div>
-                """
-                ,
+                """,
                 unsafe_allow_html=True
             )
             
             st.markdown("")
 
 
+
     with col3:
         with st.container(border=True):
-            st.metric("% of Supply", f"", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M).")
+            st.metric("% of Supply", f"", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M, SOL ≈ 540M).")
 
-            btc_pct = btc_units / 20_000_000
-            eth_pct = eth_units / 120_000_000
+            btc_pct_supply = btc_units / 20_000_000
+            eth_pct_supply = eth_units / 120_000_000
+            sol_pct_supply = sol_units / 540_000_000
 
-            # BTC Donut
-            fig_btc = go.Figure(data=[go.Pie(
+            from plotly.subplots import make_subplots
+
+            # Colors
+            COL_HELD = {
+                "BTC": "#f7931a",
+                "ETH": "#6F6F6F",
+                "SOL": "#dc1fff",
+            }
+            COL_REMAIN = "#2c2c2c"
+
+            fig = make_subplots(
+                rows=1, cols=3,
+                specs=[[{"type": "domain"}, {"type": "domain"}, {"type": "domain"}]],
+                horizontal_spacing=0.08,
+            )
+
+            fig.add_trace(go.Pie(
                 labels=["Held", "Remaining"],
-                values=[btc_pct, 1 - btc_pct],
+                values=[btc_pct_supply, 1 - btc_pct_supply],
                 hole=0.7,
-                marker_colors=["#f7931a", "#2c2c2c"],
+                marker_colors=[COL_HELD["BTC"], COL_REMAIN],
                 textinfo="none",
                 hoverinfo="skip",
                 sort=False
-            )])
-            fig_btc.update_layout(
-                width=100, height=105,
-                margin=dict(t=0, b=0, l=0, r=0),
-                showlegend=False,
-                annotations=[dict(
-                    text=f"<b>BTC</b><br>{btc_pct:.2%}",
-                    x=0.5, y=0.5, font_size=17,
-                    showarrow=False, font_color="white"
-                )]
-            )
+            ), 1, 1)
 
-            # ETH Donut
-            fig_eth = go.Figure(data=[go.Pie(
+            fig.add_trace(go.Pie(
                 labels=["Held", "Remaining"],
-                values=[eth_pct, 1 - eth_pct],
+                values=[eth_pct_supply, 1 - eth_pct_supply],
                 hole=0.7,
-                marker_colors=["#A9A9A9", "#2c2c2c"],
+                marker_colors=[COL_HELD["ETH"], COL_REMAIN],
                 textinfo="none",
                 hoverinfo="skip",
                 sort=False
-            )])
-            fig_eth.update_layout(
-                width=100, height=105,
+            ), 1, 2)
+
+            fig.add_trace(go.Pie(
+                labels=["Held", "Remaining"],
+                values=[sol_pct_supply, 1 - sol_pct_supply],
+                hole=0.7,
+                marker_colors=[COL_HELD["SOL"], COL_REMAIN],
+                textinfo="none",
+                hoverinfo="skip",
+                sort=False
+            ), 1, 3)
+
+            # Center labels inside each donut
+            fig.update_layout(
+                height=105,
                 margin=dict(t=0, b=0, l=0, r=0),
                 showlegend=False,
-                annotations=[dict(
-                    text=f"<b>ETH</b><br>{eth_pct:.2%}",
-                    x=0.5, y=0.5, font_size=17,
-                    showarrow=False, font_color="white"
-                )]
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                annotations=[
+                    dict(text=f"<b>BTC</b><br>{btc_pct_supply:.2%}", x=0.08, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
+                    dict(text=f"<b>ETH</b><br>{eth_pct_supply:.2%}", x=0.50, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
+                    dict(text=f"<b>SOL</b><br>{sol_pct_supply:.2%}", x=0.92, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
+                ]
             )
 
-            # Donuts side-by-side without resizing parent box
-            donut_col1, donut_col2 = st.columns([1, 1])
-            with donut_col1:
-                st.plotly_chart(fig_btc)
-            with donut_col2:
-                st.plotly_chart(fig_eth)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+
 
 # Historic KPIs
 def _latest_and_prev_dates(dates: pd.Series):
