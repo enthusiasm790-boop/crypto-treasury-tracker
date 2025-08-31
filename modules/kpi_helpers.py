@@ -2,9 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import base64
+import os, base64
+
 
 COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+
+_THIS = os.path.dirname(os.path.abspath(__file__))
+_ASSETS = os.path.join(_THIS, "..", "assets")
 
 
 def load_base64_image(path):
@@ -12,7 +18,9 @@ def load_base64_image(path):
         return base64.b64encode(f.read()).decode("utf-8")
 
 logo_b64 = load_base64_image("assets/ctt-symbol.svg")
-
+btc_b64 = load_base64_image(os.path.join(_ASSETS, "bitcoin-logo.png"))
+eth_b64 = load_base64_image(os.path.join(_ASSETS, "ethereum-logo.png"))
+sol_b64 = load_base64_image(os.path.join(_ASSETS, "solana-logo.png"))
 
 def format_change(value):
     if value > 0:
@@ -64,18 +72,27 @@ def render_kpis(df):
             COLORS = {"BTC": "#f7931a", "ETH": "#6F6F6F", "SOL": "#dc1fff"}
 
             # Progress bar with hover tooltip
+
             st.markdown(
                 f"""
                 <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
                     {''.join(
-                        f"<div title='{a}: ${usd_val/1e9:.1f}B ({usd_pct[a]*100:.1f}%)' "
+                        f"<div title='{a}: {usd_pct[a]*100:.1f}% (${usd_val/1e9:.1f}B)' "
                         f"style='width:{usd_pct[a]*100:.1f}%;background-color:{COLORS[a]};'></div>"
                         for a, usd_val in [("BTC", btc_usd), ("ETH", eth_usd), ("SOL", sol_usd)]
                         if usd_pct[a] > 0
                     )}
                 </div>
-                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
-                    BTC: ${btc_usd/1e9:.1f}B | ETH: ${eth_usd/1e9:.1f}B | SOL: ${sol_usd/1e9:.1f}B
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;display:flex;gap:12px;align-items:center;'>Dominance:
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{btc_b64}" width="16" height="16"> {usd_pct["BTC"]*100:.1f}%
+                    </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{eth_b64}" width="16" height="16"> {usd_pct["ETH"]*100:.1f}%
+                    </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{sol_b64}" width="16" height="16"> {usd_pct["SOL"]*100:.1f}%
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -105,13 +122,21 @@ def render_kpis(df):
                         for k in ["BTC","ETH","SOL"] if ent_pct[k] > 0
                     )}
                 </div>
-                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;'>
-                    BTC: {btc_entities} | ETH: {eth_entities} | SOL: {sol_entities}
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;display:flex;gap:12px;align-items:center;'>Adoption:
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{btc_b64}" width="16" height="16"> {btc_entities}
+                    </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{eth_b64}" width="16" height="16"> {eth_entities}
+                    </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <img src="data:image/png;base64,{sol_b64}" width="16" height="16"> {sol_entities}
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            
+
             st.markdown("")
 
 
@@ -120,13 +145,12 @@ def render_kpis(df):
         with st.container(border=True):
             st.metric("% of Supply", f"", help="Share of total circulating supply held by tracked entities (BTC ≈ 20M, ETH ≈ 120M, SOL ≈ 540M).")
 
+            # compute percentages of supply
             btc_pct_supply = btc_units / 20_000_000
             eth_pct_supply = eth_units / 120_000_000
             sol_pct_supply = sol_units / 540_000_000
 
-            from plotly.subplots import make_subplots
-
-            # Colors
+            # colors
             COL_HELD = {
                 "BTC": "#f7931a",
                 "ETH": "#6F6F6F",
@@ -134,12 +158,14 @@ def render_kpis(df):
             }
             COL_REMAIN = "#2c2c2c"
 
+            # figure and subplots
             fig = make_subplots(
                 rows=1, cols=3,
                 specs=[[{"type": "domain"}, {"type": "domain"}, {"type": "domain"}]],
                 horizontal_spacing=0.08,
             )
 
+            # pies
             fig.add_trace(go.Pie(
                 labels=["Held", "Remaining"],
                 values=[btc_pct_supply, 1 - btc_pct_supply],
@@ -170,19 +196,64 @@ def render_kpis(df):
                 sort=False
             ), 1, 3)
 
-            # Center labels inside each donut
+            # helper to center a logo and its percent for a given pie trace
+            def add_logo_and_pct(fig, trace_idx, b64, pct_text, img_scale=0.24, gap=0.26):
+                """
+                img_scale controls logo size relative to the pie domain
+                gap controls vertical spacing between logo and text as a fraction of domain height
+                """
+                t = fig.data[trace_idx]
+                try:
+                    x0, x1 = t.domain.x
+                    y0, y1 = t.domain.y
+                except Exception:
+                    x0, x1 = t.domain["x"]
+                    y0, y1 = t.domain.get("y", [0, 1])
+
+                cx = (x0 + x1) / 2.0
+                cy = (y0 + y1) / 2.0
+                dx = (x1 - x0)
+                dy = (y1 - y0)
+
+                # logo anchored to pie domain
+                fig.add_layout_image(dict(
+                    source=f"data:image/png;base64,{b64}",
+                    xref="paper", yref="paper",
+                    x=cx, y=cy + dy * (gap / 2),
+                    sizex=dx * img_scale,
+                    sizey=dy * img_scale,
+                    xanchor="center", yanchor="middle",
+                    sizing="contain",
+                    layer="above",
+                    opacity=1.0,
+                ))
+
+                # percent anchored to the same domain with symmetric offset
+                fig.add_annotation(
+                    text=pct_text,
+                    x=cx, y=cy - dy * (gap / 2),
+                    xref="paper", yref="paper",
+                    xanchor="center", yanchor="middle",
+                    showarrow=False,
+                    font=dict(size=16, color="white"),
+                    align="center",
+                )
+
+            # layout reset
             fig.update_layout(
                 height=105,
                 margin=dict(t=0, b=0, l=0, r=0),
                 showlegend=False,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                annotations=[
-                    dict(text=f"<b>BTC</b><br>{btc_pct_supply:.2%}", x=0.08, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
-                    dict(text=f"<b>ETH</b><br>{eth_pct_supply:.2%}", x=0.50, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
-                    dict(text=f"<b>SOL</b><br>{sol_pct_supply:.2%}", x=0.92, y=0.50, xref="paper", yref="paper", showarrow=False, font=dict(size=16, color="white")),
-                ]
+                annotations=[],
             )
+
+            # place logos and percents
+            # assumes btc_b64 eth_b64 sol_b64 already loaded as base64 strings
+            add_logo_and_pct(fig, 0, btc_b64, f"{btc_pct_supply:.2%}")
+            add_logo_and_pct(fig, 1, eth_b64, f"{eth_pct_supply:.2%}")
+            add_logo_and_pct(fig, 2, sol_b64, f"{sol_pct_supply:.2%}")
 
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
