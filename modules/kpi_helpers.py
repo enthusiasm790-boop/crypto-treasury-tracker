@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import base64
 import os, base64
 
 
@@ -197,7 +196,7 @@ def render_kpis(df):
             ), 1, 3)
 
             # helper to center a logo and its percent for a given pie trace
-            def add_logo_and_pct(fig, trace_idx, b64, pct_text, img_scale=0.24, gap=0.26):
+            def add_logo_and_pct(fig, trace_idx, b64, pct_text, img_scale=0.24, gap=0.25):
                 """
                 img_scale controls logo size relative to the pie domain
                 gap controls vertical spacing between logo and text as a fraction of domain height
