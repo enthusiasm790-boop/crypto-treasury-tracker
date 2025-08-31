@@ -9,11 +9,11 @@ def render_about():
             """
             <h4 style="margin-top: 0;">First Multi-Asset Crypto Treasury Tracker</h4>
             
-            <p>Crypto reserves held by public, private, and sovereign entities are increasingly shaping digital asset market structure and institutional narratives. Yet existing trackers remain fragmented—most cover only Bitcoin or a narrow subset.</p>
+            <p>Crypto reserves held by public, private, and sovereign entities are increasingly shaping digital asset market structure and institutional narratives. Yet existing tools remain fragmented—most cover only Bitcoin or a narrow subset.</p>
 
-            <p>The <strong>Crypto Treasury Tracker (CTT)</strong> brings transparency to digital asset treasuries. It maps and visualizes <strong>all</strong> crypto treasuries built by public companies, private firms, DAOs, nonprofits, and sovereigns.</p>
+            <p>The <strong>Crypto Treasury Tracker (CTT)</strong> brings transparency to digital asset treasuries (DATs). It benchmarks <strong>all</strong> DATs built by public & private companies, DAOs, non-profit organizations, and sovereigns.</p>
 
-            <p>Instead of data silos, the <strong>CTT</strong> merges asset‑level and entity‑level crypto treasury data into a unified analytics layer. Moreover, you can run cross‑sectional, regional, and historical analysis of strategic crypto holdings via dynamic filters and interactive charts. The <strong>Crypto Treasury Tracker</strong> delivers actionable insights and signals for institutional investors, finance professionals, researchers, and strategic observers.</p>
+            <p>Instead of data silos, the <strong>CTT</strong> merges asset‑level and entity‑level crypto treasury data into a unified analytics layer. Moreover, it allows cross‑sectional, regional, and historical analysis of DAT holdings using dynamic filters and interactive charts, delivering actionable insights and signals for institutional investors, finance professionals, researchers, and strategic observers.</p>
 
             </div>
             """,

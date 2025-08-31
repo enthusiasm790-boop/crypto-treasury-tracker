@@ -2,12 +2,13 @@ import streamlit as st
 import base64, mimetypes
 from sections import overview, historic, ranking, treasury_breakdown, about
 from modules.ui import render_header, render_subscribe_cta, render_support
+from analytics import log_page_once
 
 
 def render_sidebar():
 
     st.sidebar.image("assets/ctt-logo.svg", width=250)
-    st.sidebar.subheader("_Track Strategic Crypto Reserves—All in One Place!_")
+    st.sidebar.subheader("_Benchmark Digital Asset Treasuries—All in One Place!_")
 
     # global top header on every page
     render_header()
@@ -94,14 +95,24 @@ def render_sidebar():
         "</p>", unsafe_allow_html=True
     )
 
-    # render selected page
+    # render selected page & log info
+
     if section == "🌎 Global Overview":
+        log_page_once("global_summary")
         overview.render_overview()
+
     if section == "📊 Historic Holdings":
+        log_page_once("history")
         historic.render_historic_holdings()
+
     if section == "🥇 Leaderboard":
+        log_page_once("leaderboard")
         ranking.render_entity_ranking()
+
     if section == "🔍 Treasury Breakdown":
+        log_page_once("treasury_breakdown")
         treasury_breakdown.render_treasury_breakdown()
+
     if section == "ℹ️ About":
+        log_page_once("about")
         about.render_about()

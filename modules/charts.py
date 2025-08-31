@@ -377,7 +377,7 @@ def holdings_by_entity_type_bar(df):
 
 
     # Add total USD value as annotation above each full bar
-    totals = grouped.groupby('Entity Type')['USD Value'].sum()
+    totals = grouped.groupby('Entity Type', observed=False)['USD Value'].sum()
     for i, entity_type in enumerate(totals.index):
         fig.add_annotation(
             x=entity_type,
@@ -503,7 +503,9 @@ def top_countries_by_entity_count(df):
         ).to_dict()
     )
 
-    filtered['Custom Hover'] = filtered['Country'].map(country_breakdowns)
+    #filtered['Custom Hover'] = filtered['Country'].map(country_breakdowns)
+    filtered = filtered.copy()
+    filtered.loc[:, 'Custom Hover'] = filtered['Country'].map(country_breakdowns)
 
     # Step 4: Create stacked bar chart
     fig = px.bar(

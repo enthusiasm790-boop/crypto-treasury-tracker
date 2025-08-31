@@ -6,7 +6,7 @@ from modules.charts import render_world_map, render_rankings
 from modules.filters import _opts
 from datetime import datetime
 from modules.ui import render_plotly
-
+from analytics import log_filter_if_changed, log_chart_view, log_table_render
 
 
 # Supply column row-wise
@@ -62,6 +62,14 @@ def render_overview():
             key="ui_value_range_map"   # no index on reruns
         )
         st.session_state["flt_value_range"] = sel_v
+    
+        # Log filters if changed
+        log_filter_if_changed("global_summary", {
+            "asset": sel_assets or ["All"],
+            "entity_type": sel_et or "All",
+            "value_range": sel_v or "All",
+        })
+
     
     # Global Map
     with st.container(border=True):
@@ -119,13 +127,33 @@ def render_overview():
     row_count = st.selectbox("Rows to display", options=[5, 10, 25, 50, 100], index=1)
 
     # Display as interactive dataframe (sortable, scrollable)
-    st.dataframe(table.head(row_count),
+    sub = table.head(row_count)
+
+    st.dataframe(
+        sub,
         column_config={
-            "USD Value": st.column_config.NumberColumn("USD Value",format="$%d"),
+            "USD Value": st.column_config.NumberColumn("USD Value", format="$%d"),
             "% of Supply": st.column_config.NumberColumn("% of Supply", format="%.2f%%"),
         },
         use_container_width=True
     )
+    log_table_render("global_summary", "overview_table", len(sub))
+
+    # CSV download
+    csv_bytes = sub.to_csv(index=True).encode("utf-8")
+    if st.download_button(
+        "Download table as CSV",
+        data=csv_bytes,
+        file_name=f"crypto_treasury_list_top{len(sub)}.csv",
+        mime="text/csv",
+        key="dl_overview_table",
+    ):
+        from analytics import log_event
+        log_event("download_click", {
+            "target": "table_csv",
+            "file_name": f"crypto_treasury_list_top{len(sub)}.csv",
+            "rows_exported": int(len(sub)),
+        })
  
     # Last update info
-    st.caption("*Last treasury data base update: August 17, 2025*")
+    st.caption("*Last treasury data base update: August 31, 2025*")

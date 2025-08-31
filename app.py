@@ -3,9 +3,13 @@ from modules import ui
 from modules.data_loader import get_prices, load_units, attach_usd_values, load_historic_data
 from modules.filters import _init_global_filters, _opts
 from modules.sidebar_info import render_sidebar
+from analytics import init_analytics
 
 
 st.set_page_config(page_title="Crypto Treasury Tracker", layout="wide")
+
+# init analytics
+init_analytics()
 
 # one-time init
 if "initialized" not in st.session_state:
