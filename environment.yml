@@ -11,3 +11,5 @@ dependencies:
       - oauth2client
       - plotly
       - altair
+      - posthog>=3.5.1,<4
+      - extra-streamlit-components>=0.1.71
