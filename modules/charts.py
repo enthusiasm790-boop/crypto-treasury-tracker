@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from plotly.colors import qualitative
 import streamlit as st
 
+ASSETS_ORDER = ["BTC","ETH","SOL","XRP","BNB","SUI","LTC"]  # stable order for stacking/colors
 COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
 
 def format_usd(value):
@@ -338,6 +339,171 @@ def historic_chart(df, by="USD"):
     )
 
     return fig
+
+
+def _first_day_next_month(dt: pd.Timestamp) -> pd.Timestamp:
+    dt = pd.Timestamp(dt).normalize()
+    return (dt + pd.offsets.MonthBegin(1))
+
+def _prepare_hist_with_snapshot(df_historic: pd.DataFrame, current_df: pd.DataFrame | None):
+    dfh = df_historic.copy()
+    dfh["USD Value"] = pd.to_numeric(dfh["USD Value"], errors="coerce").fillna(0.0)
+    dfh["Holdings (Unit)"] = pd.to_numeric(dfh.get("Holdings (Unit)"), errors="coerce").fillna(0.0)
+    dfh["Crypto Asset"] = dfh["Crypto Asset"].astype(str).str.upper()
+
+    selected_assets = [a for a in ASSETS_ORDER if a in dfh["Crypto Asset"].unique()]
+    if not selected_assets:
+        return pd.DataFrame(), selected_assets
+
+    hist = (
+        dfh.groupby(["Date","Crypto Asset"], as_index=False)
+           .agg({"USD Value":"sum","Holdings (Unit)":"sum"})
+    )
+    last_hist_month = hist["Date"].max() if not hist.empty else pd.Timestamp.today().normalize()
+
+    if current_df is not None and not current_df.empty:
+        snap = current_df.copy()
+        snap["Crypto Asset"] = snap["Crypto Asset"].astype(str).str.upper()
+        snap["USD Value"] = pd.to_numeric(snap["USD Value"], errors="coerce").fillna(0.0)
+        snap["Holdings (Unit)"] = pd.to_numeric(snap.get("Holdings (Unit)"), errors="coerce").fillna(0.0)
+        snap = snap.groupby("Crypto Asset", as_index=False).agg({"USD Value":"sum","Holdings (Unit)":"sum"})
+        snap["Date"] = _first_day_next_month(last_hist_month)
+        hist = pd.concat([hist, snap[["Date","Crypto Asset","USD Value","Holdings (Unit)"]]], ignore_index=True)
+
+    # filter & stable order
+    hist = hist[hist["Crypto Asset"].isin(selected_assets)]
+    rank = {a:i for i,a in enumerate(ASSETS_ORDER)}
+    hist = hist.sort_values(["Date","Crypto Asset"], key=lambda s: s.map(rank).fillna(999))
+    return hist, selected_assets
+
+
+# --- left: Cumulative Market Cap (USD) ---
+def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFrame | None = None):
+    hist, selected_assets = _prepare_hist_with_snapshot(df_historic, current_df)
+    fig = go.Figure()
+    if hist.empty:
+        return fig
+
+    totals = hist.groupby("Date", as_index=True)["USD Value"].sum().reset_index().sort_values("Date")
+
+    if len(selected_assets) == 1:
+        a = selected_assets[0]
+        s = (hist[hist["Crypto Asset"] == a].sort_values("Date")[["Date","USD Value","Holdings (Unit)"]])
+
+        # Units area (left axis)
+        fig.add_trace(go.Scatter(
+            x=s["Date"], y=s["Holdings (Unit)"],
+            mode="lines",
+            line=dict(width=0, color=COLORS.get(a, "#888")),
+            fill="tozeroy",
+            name=f"{a} Units",
+            hovertemplate="<b>%{x|%b %Y}</b><br>Units: <b>%{y:,.0f}</b><extra></extra>",
+            yaxis="y"
+        ))
+        # USD line (right axis)
+        fig.add_trace(go.Scatter(
+            x=s["Date"], y=s["USD Value"],
+            mode="lines",
+            line=dict(width=3, color=COLORS.get(a, "#ff9393")),
+            name=f"{a} USD",
+            hovertemplate="<b>%{x|%b %Y}</b><br>USD: <b>%{y:$,.0f}</b><extra></extra>",
+            yaxis="y2"
+        ))
+        fig.update_layout(
+            yaxis=dict(title="Units", rangemode="tozero"),
+            yaxis2=dict(title="USD", overlaying="y", side="right", rangemode="tozero"),
+        )
+    else:
+        # Multi-asset → one total USD line + per-asset USD lines
+        series = totals.reset_index().sort_values("Date")
+        # total: solid, thicker
+        fig.add_trace(go.Scatter(
+            x=series["Date"], y=series["USD Value"],
+            mode="lines",
+            line=dict(width=3, dash="solid", color="#ffffff"),
+            name="Total",
+            hovertemplate="<b>%{x|%b %Y}</b><br>Total: <b>%{y:$,.0f}</b><extra></extra>",
+        ))
+        # per-asset lines: thinner, dashed, asset colors
+        for a in selected_assets:
+            s = (hist[hist["Crypto Asset"] == a]
+                .groupby("Date", as_index=False)["USD Value"].sum()
+                .sort_values("Date"))
+            fig.add_trace(go.Scatter(
+                x=s["Date"], y=s["USD Value"],
+                mode="lines",
+                line=dict(width=1.8, dash="dot", color=COLORS.get(a, "#888")),
+                name=f"{a}",
+                hovertemplate="<b>%{x|%b %Y}</b><br>"+f"{a}: <b>%{{y:$,.0f}}</b><extra></extra>",
+            ))
+
+
+    fig.update_layout(
+        margin=dict(t=50, b=20, l=40, r=20),
+        legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
+        hoverlabel=dict(align='left'),
+        xaxis_title="", yaxis_title="",
+        legend_title_text='',
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
+    )
+    fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+    fig.add_annotation(
+        text="Crypto Treasury Tracker", x=0.5, y=0.95, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
+        xanchor="center", yanchor="top"
+    )
+    return fig
+
+
+# --- right: Dominance (USD stacked area) ---
+def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame | None = None):
+    hist, selected_assets = _prepare_hist_with_snapshot(df_historic, current_df)
+    fig = go.Figure()
+    if hist.empty:
+        return fig
+
+    usds = hist.pivot(index="Date", columns="Crypto Asset", values="USD Value").fillna(0.0)
+    usds = usds.reindex(columns=selected_assets)
+    totals_usd = usds.sum(axis=1)
+
+    cum = None
+    for i, a in enumerate([x for x in ["BTC", "ETH", "SOL"] if x in selected_assets]):
+        top = (usds[a] if cum is None else (cum + usds[a]))
+        cd = list(zip(usds[a].values, totals_usd.values))
+        fig.add_trace(go.Scatter(
+            x=usds.index, y=top.values,
+            mode="lines",
+            line=dict(width=0.0, color=COLORS.get(a, "#888")),
+            fill=("tozeroy" if i == 0 else "tonexty"),
+            name=a,
+            hovertemplate=(
+                "<b>%{x|%b %Y}</b><br>"
+                f"{a}: <b>%{{customdata[0]:$,.0f}}</b>"
+                "<extra></extra>"
+            ),
+            customdata=cd
+        ))
+        cum = top
+
+
+    fig.update_traces(opacity=0.95)
+    fig.update_layout(
+        margin=dict(t=50, b=20, l=40, r=20),
+        legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
+        hoverlabel=dict(align='left'),
+        xaxis_title="", yaxis_title="", legend_title_text='',
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
+    )
+    fig.update_yaxes(rangemode="tozero", tickprefix="$")
+    fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+    fig.add_annotation(
+        text="Crypto Treasury Tracker", x=0.5, y=0.95, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
+        xanchor="center", yanchor="top"
+    )
+
+    return fig
+
 
 
 def holdings_by_entity_type_bar(df):
