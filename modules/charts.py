@@ -448,9 +448,9 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
     )
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
     fig.add_annotation(
-        text="Crypto Treasury Tracker", x=0.5, y=0.95, xref="paper", yref="paper",
+        text="Crypto Treasury Tracker", x=0.5, y=0.5, xref="paper", yref="paper",
         showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
-        xanchor="center", yanchor="top"
+        xanchor="center", yanchor="middle"
     )
     return fig
 
@@ -497,9 +497,9 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
     fig.update_yaxes(rangemode="tozero", tickprefix="$")
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
     fig.add_annotation(
-        text="Crypto Treasury Tracker", x=0.5, y=0.95, xref="paper", yref="paper",
+        text="Crypto Treasury Tracker", x=0.5, y=0.5, xref="paper", yref="paper",
         showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
-        xanchor="center", yanchor="top"
+        xanchor="center", yanchor="middle"
     )
 
     return fig
