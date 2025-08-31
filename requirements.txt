@@ -4,6 +4,5 @@ oauth2client
 plotly
 altair
 pandas
-posthog
-#streamlit-cookies-manager==0.2.*
-extra-streamlit-components
+posthog>=3.5.0,<4
+extra-streamlit-components>=0.1.71
