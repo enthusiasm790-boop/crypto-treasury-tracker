@@ -444,7 +444,6 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
         hoverlabel=dict(align='left'),
         xaxis_title="", yaxis_title="",
         legend_title_text='',
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
     )
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
     fig.add_annotation(
@@ -492,7 +491,6 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
         legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
         hoverlabel=dict(align='left'),
         xaxis_title="", yaxis_title="", legend_title_text='',
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)"
     )
     fig.update_yaxes(rangemode="tozero", tickprefix="$")
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
