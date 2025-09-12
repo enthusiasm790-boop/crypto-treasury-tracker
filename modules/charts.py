@@ -1,11 +1,22 @@
-import plotly.express as px
+import streamlit as st
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 from plotly.colors import qualitative
-import streamlit as st
+
 
 ASSETS_ORDER = ["BTC","ETH","SOL","XRP","BNB","SUI","LTC"]  # stable order for stacking/colors
 COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+TYPE_PALETTE = {
+    "Public Company": (123, 197, 237), # blue 
+    "Private Company": (232, 118, 226), # rose 
+    "DAO": (237, 247, 94), # amber 
+    "Foundation": (34, 197, 94), # green 
+    "Government": (245, 184, 122), # slate 
+    "Other": (250, 250, 250), # white
+    }
+COLOR_MAP = {k: f"rgb({r},{g},{b})" for k, (r, g, b) in TYPE_PALETTE.items()}
 
 def format_usd(value):
     if value >= 1_000_000_000:
@@ -127,9 +138,9 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         color="Total_USD",
         hover_name="Country",
         custom_data=["Custom_Hover"],
-        color_continuous_scale=px.colors.sequential.Sunset,
+        color_continuous_scale=px.colors.sequential.Agsunset, #https://plotly.com/python/builtin-colorscales/
         projection="natural earth",
-        template="plotly_dark"
+        template="simple_white"
     )
 
     fig.update_traces(
@@ -141,7 +152,7 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
-        font=dict(size=30, color="white"),
+        font=dict(size=30, color="black"),
         opacity=0.3,
         xanchor="center",
         yanchor="middle",
@@ -156,8 +167,8 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
             projection_scale=1  # optional zoom level
         ),
         uirevision="static-map",  # Prevents user interaction from updating layout
-        margin=dict(l=0, r=0, t=10, b=0),
-        height=700,
+        margin=dict(l=0, r=0, t=0, b=0),
+        height=600,
         coloraxis_colorbar=dict(title="Total USD"),
         font=dict(size=12),
     )
@@ -170,14 +181,11 @@ def render_rankings(df, asset="BTC", by="units"):
     d = df[df["Crypto Asset"] == asset]
 
     top = (
-        d.groupby("Entity Name")
-        .agg(
-            Holdings=("Holdings (Unit)", "sum"),
-            USD_Value=("USD Value", "sum")
-        )
+        d.groupby("Entity Name", as_index=False)
+        .agg(Holdings=("Holdings (Unit)", "sum"),
+             USD_Value=("USD Value", "sum"))
         .sort_values("Holdings" if by == "units" else "USD_Value", ascending=False)
         .head(5)
-        .reset_index()
     )
 
     values = top["Holdings"] if by == "units" else top["USD_Value"]
@@ -187,45 +195,45 @@ def render_rankings(df, asset="BTC", by="units"):
         else top["USD_Value"].apply(lambda x: f"${x/1e9:.1f}B")
     )
 
-    # Step 1: Create custom hover info
+    bar_color = COLORS.get(asset, "#A9A9A9")
+
     top["Custom Hover"] = top.apply(
-        lambda row: f"<b>{row['Entity Name']}</b><br>" +
-                    (f"Holdings: {row['Holdings']:,.0f}" if by == "units"
-                     else f"USD Value: <b>${row['USD_Value']/1e9:.1f}B</b>"),
+        lambda row: f"<b>{row['Entity Name']}</b><br>"
+                    + (f"Holdings {row['Holdings']:,.0f}" if by == "units"
+                       else f"USD Value <b>${row['USD_Value']/1e9:.1f}B</b>"),
         axis=1
     )
 
-    # Step 2: Updated figure with hovertemplate and customdata
     fig = go.Figure(go.Bar(
         x=values,
         y=top["Entity Name"],
-        orientation='h',
+        orientation="h",
         text=value_labels,
         textposition="auto",
-        marker=dict(color="#f7931a" if asset == "BTC" else "#A9A9A9"),
+        marker=dict(color=bar_color),
         customdata=top["Custom Hover"],
         hovertemplate="%{customdata}<extra></extra>"
     ))
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
-        x=0.95, y=0.05,                      # Center of chart
+        text="Crypto Treasury Tracker",
+        x=0.95, y=0.05,
         xref="paper", yref="paper",
         showarrow=False,
         font=dict(size=15, color="white"),
-        opacity=0.3,                       # Adjust for subtlety
+        opacity=0.3,
         xanchor="right",
         yanchor="middle",
     )
-    
+
     fig.update_layout(
+        title_text="",
         height=240,
-        title=f"Top 5 {asset} Treasury Holders",
         yaxis=dict(autorange="reversed", tickfont=dict(size=12), title_standoff=25),
-        margin=dict(l=140, r=10, t=40, b=20),  # Uniform left margin
+        margin=dict(l=140, r=10, t=0, b=20),
         font=dict(size=12),
-        hoverlabel=dict(align='left')
-        )
+        hoverlabel=dict(align="left")
+    )
 
     return fig
 
@@ -344,6 +352,7 @@ def historic_chart(df, by="USD"):
 def _first_day_next_month(dt: pd.Timestamp) -> pd.Timestamp:
     dt = pd.Timestamp(dt).normalize()
     return (dt + pd.offsets.MonthBegin(1))
+
 
 def _prepare_hist_with_snapshot(df_historic: pd.DataFrame, current_df: pd.DataFrame | None):
     dfh = df_historic.copy()
@@ -466,7 +475,7 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
     totals_usd = usds.sum(axis=1)
 
     cum = None
-    for i, a in enumerate([x for x in ["BTC", "ETH", "SOL"] if x in selected_assets]):
+    for i, a in enumerate([x for x in ASSETS_ORDER if x in selected_assets]):
         top = (usds[a] if cum is None else (cum + usds[a]))
         cd = list(zip(usds[a].values, totals_usd.values))
         fig.add_trace(go.Scatter(
@@ -501,7 +510,6 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
     )
 
     return fig
-
 
 
 def holdings_by_entity_type_bar(df):
@@ -601,12 +609,17 @@ def entity_type_distribution_pie(df):
     entity_type_counts = df[['Entity Name', 'Entity Type']].drop_duplicates()
     type_counts = entity_type_counts['Entity Type'].value_counts().reset_index()
     type_counts.columns = ['Entity Type', 'Count']
+    type_counts["Entity Type"] = type_counts["Entity Type"].astype(str).str.strip()
+    ORDER = list(TYPE_PALETTE.keys())
 
     fig = px.pie(
         type_counts,
-        values='Count',
-        names='Entity Type',
-        hole=0.65
+        values="Count",
+        names="Entity Type",
+        hole=0.65,
+        color="Entity Type",
+        color_discrete_map=COLOR_MAP,
+        category_orders={"Entity Type": ORDER},
     )
 
     # Force all percentages to show with 1 decimal (even <1%)
@@ -670,6 +683,7 @@ def top_countries_by_entity_count(df):
     #filtered['Custom Hover'] = filtered['Country'].map(country_breakdowns)
     filtered = filtered.copy()
     filtered.loc[:, 'Custom Hover'] = filtered['Country'].map(country_breakdowns)
+    filtered['Entity Type'] = filtered['Entity Type'].astype(str).str.strip()
 
     # Step 4: Create stacked bar chart
     fig = px.bar(
@@ -677,6 +691,8 @@ def top_countries_by_entity_count(df):
         x='Entity Count',
         y='Country',
         color='Entity Type',
+        color_discrete_map=COLOR_MAP,
+        category_orders={'Entity Type': list(TYPE_PALETTE.keys())},  # consistent legend/stack
         orientation='h',
         labels={'Entity Count': 'Entities'},
         custom_data=['Custom Hover'],
@@ -757,6 +773,7 @@ def top_countries_by_usd_value(df):
     )
 
     filtered['Custom Hover'] = filtered['Country'].map(country_breakdowns)
+    filtered['Entity Type'] = filtered['Entity Type'].astype(str).str.strip()
 
     # Step 4: Create stacked bar chart
     fig = px.bar(
@@ -764,10 +781,12 @@ def top_countries_by_usd_value(df):
         x='USD Value',
         y='Country',
         color='Entity Type',
+        color_discrete_map=COLOR_MAP,
+        category_orders={'Entity Type': list(TYPE_PALETTE.keys())},  # consistent legend/stack
         orientation='h',
         labels={'USD Value': 'USD'},
         custom_data=['Custom Hover'],
-        text=None  # Remove partial bar labels
+        text=None
     )
 
     # Step 5: Add total value at end of bar
@@ -925,3 +944,211 @@ def entity_ranking(df, by="USD", top_n=10):
     )
 
     return fig
+
+
+def _clip_name(s: str, n: int = 20) -> str:
+    s = str(s).strip()
+    return (s[: n - 1] + "…") if len(s) > n else s
+
+def treemap_composition(df, mode: str = "country_type"):
+    """
+    mode:
+      - "country_type": Country → Entity Type (area = USD)
+      - "type_entity":  Entity Type → Entity Name (area = USD)
+    """
+    d = df.copy()
+    d = d[d["USD Value"] > 0]  # guard: only positive areas
+    d["Country"] = d["Country"].fillna("Decentralized").astype(str).str.strip()
+
+    order = list(TYPE_PALETTE.keys())
+    d["Entity Type"] = (
+        d["Entity Type"].fillna("Other").astype(str).str.strip().replace({"": "Other"})
+    )
+    d.loc[~d["Entity Type"].isin(order), "Entity Type"] = "Other"
+
+    # palette → CSS colors
+    color_map = {k: f"rgb({r},{g},{b})" for k, (r, g, b) in TYPE_PALETTE.items()}
+    parent_color = "rgb(22,24,28)"  # dark tile for parents (Streamlit dark)
+
+    # ---------- helper to create per-leaf UNITS lines ----------
+    def _format_units_lines(grouped_units_rows, key_cols):
+        grp = grouped_units_rows.sort_values("Holdings (Unit)", ascending=False)
+        out = {}
+        for keys, sub in grp.groupby(key_cols, observed=True):
+            lines = [f"{a}: {int(u):,}".replace(",", " ") for a, u in zip(sub["Crypto Asset"], sub["Holdings (Unit)"])]
+            out[tuple(keys if isinstance(keys, tuple) else (keys,))] = "<br>".join(lines)
+        return out
+
+    if mode == "type_entity":
+        # Entity Type → Entity Name
+        units_rows = (
+            d.groupby(["Entity Type", "Entity Name", "Crypto Asset"], as_index=False, observed=True)
+             .agg(**{"Holdings (Unit)": ("Holdings (Unit)", "sum")})
+        )
+        units_text_map = _format_units_lines(units_rows, ["Entity Type", "Entity Name"])
+
+        grouped = (
+            d.groupby(["Entity Type", "Entity Name"], as_index=False, observed=True)
+             .agg(USD_Value=("USD Value", "sum"),
+                  Country=("Country", lambda x: x.mode().iat[0] if len(x) else ""))
+        )
+
+        fig = px.treemap(
+            grouped,
+            path=["Entity Type", "Entity Name"],
+            values="USD_Value",
+            color="Entity Type",
+            color_discrete_map=color_map,
+            custom_data=["Country", "USD_Value"],
+        )
+
+        # Post-style: dark parents, white centered text, units lines in leaves
+        tr = fig.data[0]
+        labels, parents = list(tr.labels), list(tr.parents)
+        customs = tr.customdata if tr.customdata is not None else [[None, None]] * len(labels)
+
+        colors = list(getattr(tr.marker, "colors", [None] * len(labels)))
+        if not colors or len(colors) != len(labels):
+            colors = [""] * len(labels)
+
+        text_labels, hovertext = [], []
+        for i, (lab, par) in enumerate(zip(labels, parents)):
+            if par == "":  # top-level type node
+                colors[i] = parent_color
+                total_usd = grouped.loc[grouped["Entity Type"] == lab, "USD_Value"].sum()
+                hovertext.append(f"<b>{lab}</b><br>USD: ${total_usd:,.0f}")
+                #text_labels.append(lab)
+                text_labels.append(f"<b>{_clip_name(lab)}</b>")
+
+            else:          # leaf = entity
+                et = par
+                units_lines = units_text_map.get((et, lab), "")
+                #text_labels.append(f"{lab}<br>{units_lines}" if units_lines else lab)
+                text_labels.append(
+                    f"<b>{_clip_name(lab)}</b><br>{units_lines}" if units_lines else f"<b>{_clip_name(lab)}</b>"
+                )
+                country = customs[i][0]; usd = customs[i][1]
+                hovertext.append(f"<b>{lab}</b><br>Country: {country}<br>USD: ${usd:,.0f}")
+
+        tr.marker.colors   = colors
+        tr.text            = text_labels
+        tr.texttemplate    = "%{text}"
+        tr.textfont.color  = "white"
+        tr.textposition    = "middle center"
+        tr.hovertext       = hovertext
+        tr.hovertemplate   = "%{hovertext}<extra></extra>"
+
+    else:
+        # Country → Entity Type
+        units_rows = (
+            d.groupby(["Country", "Entity Type", "Crypto Asset"], as_index=False, observed=True)
+             .agg(**{"Holdings (Unit)": ("Holdings (Unit)", "sum")})
+        )
+        units_text_map = _format_units_lines(units_rows, ["Country", "Entity Type"])
+
+        grouped = (
+            d.groupby(["Country", "Entity Type"], as_index=False, observed=True)
+             .agg(USD_Value=("USD Value", "sum"),
+                  Entities=("Entity Name", "nunique"))
+        )
+
+        fig = px.treemap(
+            grouped,
+            path=["Country", "Entity Type"],
+            values="USD_Value",
+            color="Entity Type",
+            color_discrete_map=color_map,
+            custom_data=["Entities", "USD_Value"],
+        )
+
+        tr = fig.data[0]
+        labels, parents = list(tr.labels), list(tr.parents)
+        customs = tr.customdata if tr.customdata is not None else [[None, None]] * len(labels)
+
+        colors = list(getattr(tr.marker, "colors", [None] * len(labels)))
+        if not colors or len(colors) != len(labels):
+            colors = [""] * len(labels)
+
+        text_labels, hovertext = [], []
+        for i, (lab, par) in enumerate(zip(labels, parents)):
+            if par == "":  # country node
+                colors[i] = parent_color
+                csum = grouped.loc[grouped["Country"] == lab, "USD_Value"].sum()
+                ent  = int(grouped.loc[grouped["Country"] == lab, "Entities"].sum())
+                hovertext.append(f"<b>{lab}</b><br>Entities: {ent}<br>USD: ${csum:,.0f}")
+                #text_labels.append(lab)
+                text_labels.append(f"<b>{_clip_name(lab)}</b>")
+
+            else:          # leaf = entity type inside country
+                units_lines = units_text_map.get((par, lab), "")
+                #text_labels.append(f"{lab}<br>{units_lines}" if units_lines else lab)
+                text_labels.append(
+                    f"<b>{_clip_name(lab)}</b><br>{units_lines}" if units_lines else f"<b>{_clip_name(lab)}</b>"
+                )
+                ent = customs[i][0]; usd = customs[i][1]
+                hovertext.append(f"<b>{par}</b> · {lab}<br>Entities: {ent}<br>USD: ${usd:,.0f}")
+
+        tr.marker.colors   = colors
+        tr.text            = text_labels
+        tr.texttemplate    = "%{text}"
+        tr.textfont.color  = "white"
+        tr.textposition    = "middle center"
+        tr.hovertext       = hovertext
+        tr.hovertemplate   = "%{hovertext}<extra></extra>"
+
+    # Global layout polish
+    fig.update_traces(
+        root_color="rgba(0,0,0,0)",
+        tiling=dict(pad=3),
+        marker=dict(line=dict(width=0)),
+        pathbar={"visible": False},
+    )
+    fig.update_layout(
+        height=520,
+        margin=dict(l=8, r=8, t=8, b=8),
+        font=dict(size=14, color="white"),
+        uniformtext=dict(minsize=11, mode="hide"),   
+        hoverlabel=dict(align="left"),
+        legend_traceorder="normal",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+    # subtle watermark
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",
+        x=0.5, y=0.15, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=35, color="black"), opacity=0.30,
+        xanchor="center", yanchor="middle",
+    )
+    return fig
+
+
+def lorenz_curve_chart(p, L, asset: str | None = None):
+    """Lorenz curve; if a single asset is passed, color the line with its color."""
+    default_blue = "#66cded"
+
+    line_color = COLORS.get(asset, default_blue) if asset else default_blue
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=p, y=L, mode="lines+markers",
+        name="Lorenz",
+        line=dict(color=line_color, width=3),
+        marker=dict(color=line_color, size=6),
+        hovertemplate="Population share: %{x:.1%}<br>Weight share: %{y:.1%}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=[0,1], y=[0,1], mode="lines",
+        name="Equality", line=dict(dash="dash", width=1), hoverinfo="skip"
+    ))
+    fig.update_layout(
+        height=320,
+        margin=dict(l=40, r=20, t=10, b=30),
+        xaxis=dict(title="Cumulative share of groups", tickformat=".0%", range=[0,1]),
+        yaxis=dict(title="Cumulative share of weight", tickformat=".0%", range=[0,1]),
+        showlegend=False,
+        hoverlabel=dict(align="left")
+    )
+    return fig
+
+

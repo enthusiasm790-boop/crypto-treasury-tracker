@@ -1,4 +1,5 @@
 import streamlit as st
+import numpy as np
 import json, os, time, requests, gspread, pandas as pd
 from google.oauth2.service_account import Credentials
 
@@ -9,42 +10,42 @@ LOCAL_FALLBACK_FILE = "data/last_prices.json"
 ASSETS = [
     "BTC",
     "ETH",
-    #"XRP",
-    #"BNB",
     "SOL",
-    #"SUI",
-    #"LTC"
+    "SUI",
+    "LTC",
+    "XRP",
+    #"BNB",
     ]
 
 COINGECKO_IDS = {
     "BTC":"bitcoin", 
     "ETH":"ethereum",
-    #"XRP":"ripple",
+    "XRP":"ripple",
     # "BNB":"binancecoin",
     "SOL":"solana",
-    #"SUI": "sui",
-    # "LTC":"litecoin"
+    "SUI": "sui",
+    "LTC":"litecoin"
     }
 
 DEFAULT_PRICES = {
     "BTC":120_000,
     "ETH":4_000,
-    #"XRP":3.50,
+    "XRP":3.50,
     #"BNB":700.00,
     "SOL":150.00, 
-    #"SUI":3.50, 
-    #"LTC":120.00
+    "SUI":3.50, 
+    "LTC":110.00
     }
 
 # Supply column row-wise (retrieved from Coingecko)
 SUPPLY_CAPS = {
     "BTC": 20_000_000,  
     "ETH": 120_000_000,
-    #"XRP": 60_000_000_000,
+    "XRP": 60_000_000_000,
     #"BNB": 140_000_000,
     "SOL": 540_000_000,
-    #"SUI": 3_500_000_000,
-    #"LTC": 76_000_000,
+    "SUI": 3_500_000_000,
+    "LTC": 76_000_000,
     }
 
 
@@ -167,10 +168,15 @@ def load_units():
             dfs.append(df_a)
 
     if not dfs:
-        return pd.DataFrame(columns=["Entity Name","Entity Type","Country","Crypto Asset","Holdings (Unit)"])
+        return pd.DataFrame(columns=["Entity Name", "Ticker", "Market Cap", "Entity Type","Country","Crypto Asset","Holdings (Unit)"])
 
     df = pd.concat(dfs, ignore_index=True)
-    df = df[["Entity Name","Entity Type","Country","Crypto Asset","Holdings (Unit)"]]
+    df = df[["Entity Name", "Ticker", "Market Cap", "Entity Type","Country","Crypto Asset","Holdings (Unit)"]]
+    df["Ticker"] = df["Ticker"].astype(str).str.strip()
+    #df["Ticker"] = df["Ticker"].replace({"None": np.nan, "": np.nan}).astype("string")
+
+    df["Market Cap"] = pd.to_numeric(df["Market Cap"], errors="coerce")  # NaN for missing
+
     df["Holdings (Unit)"] = (
         df["Holdings (Unit)"].astype(str)
         .str.replace(".", "", regex=False)
@@ -178,6 +184,7 @@ def load_units():
         .astype(float)
     )
     df["Holdings (Unit)"] = pd.to_numeric(df["Holdings (Unit)"], errors="coerce").fillna(0.0)
+
     return df
 
 
@@ -189,7 +196,24 @@ def attach_usd_values(df_units: pd.DataFrame, prices_input):
         price_map = {k.upper(): float(v) for k, v in prices_input.items()}
 
     df = df_units.copy()
+    # 1) Calculation of total crypto treasury value in USD
     df["USD Value"] = df["Crypto Asset"].map(price_map).fillna(0.0) * df["Holdings (Unit)"]
+
+    # 2)  mNAV multiple  -> Market Cap over crypto NAV
+    df["mNAV"] = df["Market Cap"] / df["USD Value"]
+    df.loc[df["Market Cap"].isna() | (df["Market Cap"] <= 0) | (df["USD Value"] <= 0), "mNAV"] = np.nan
+    df["mNAV"] = df["mNAV"].round(2)
+
+    # 3) Premium or Discount percent -> equals mNAV minus 1
+    df["Premium"] = ((df["Market Cap"] / df["USD Value"]) - 1) * 100
+    df.loc[df["Market Cap"].isna() | (df["Market Cap"] <= 0) | (df["USD Value"] <= 0), "Premium"] = np.nan
+    df["Premium"] = df["Premium"].round(2)
+
+    # 4) Treasury to Market Cap ratio percent -> share of company value in crypto
+    df["TTMCR"] = (df["USD Value"] / df["Market Cap"]) * 100
+    df.loc[df["Market Cap"].isna() | (df["Market Cap"] <= 0), "TTMCR"] = np.nan
+    df["TTMCR"] = df["TTMCR"].round(2)
+    
     return df
 
 # Function to get historic treasury data from master sheets

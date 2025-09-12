@@ -25,7 +25,7 @@ if "initialized" not in st.session_state:
     # compute USD values once per price snapshot
     st.session_state["data_df"] = attach_usd_values(units_df, st.session_state["prices"])
     _init_global_filters(st.session_state["data_df"])
-
+    print(st.session_state["data_df"].head())
     # canonical option lists used by ALL pages
     st.session_state["opt_assets"] = _opts(st.session_state["data_df"]["Crypto Asset"])
     st.session_state["opt_entity_types"] = ["All"] + _opts(st.session_state["data_df"]["Entity Type"])

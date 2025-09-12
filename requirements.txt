@@ -4,5 +4,6 @@ oauth2client
 plotly
 altair
 pandas
+fpdf2
 posthog>=3.5.0,<4
 extra-streamlit-components>=0.1.71

@@ -32,7 +32,7 @@ def _init_global_filters(df):
 
 def apply_filters(df):
     with st.container(border=True):
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns([2, 1, 1])
 
         asset_opts   = st.session_state["opt_assets"]
         type_opts    = st.session_state["opt_entity_types"]
