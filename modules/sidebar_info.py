@@ -1,6 +1,6 @@
 import streamlit as st
 import base64, mimetypes
-from sections import overview, historic, ranking, treasury_breakdown, about
+from sections import overview, global_, historic, ranking, treasury_breakdown, about, concentration
 from modules.ui import render_header, render_subscribe_cta, render_support
 from analytics import log_page_once
 
@@ -17,7 +17,18 @@ def render_sidebar():
     render_subscribe_cta()
 
     # section switcher
-    section = st.sidebar.radio("Explore The Tracker", ["🌎 Global Overview", "📊 Historic Holdings", "🥇 Leaderboard", "🔍 Treasury Breakdown", "ℹ️ About"], label_visibility = "visible")
+    section = st.sidebar.radio("Explore The Tracker", 
+                               [
+                                    "Dashboard",
+                                    "Global Map",
+                                    "Trends",
+                                    "Top Holders",
+                                    "Distribution",
+                                    "Concentration",
+                                    "About"
+                                ]
+                                , label_visibility = "visible")
+    
     st.sidebar.write(" ")
 
     # --- Reset filters ---
@@ -91,28 +102,36 @@ def render_sidebar():
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         "<p style='font-size: 0.75rem; color: gray;'>"
-        "v1.0 • © 2025 Crypto Treasury Tracker"
+        "v1.1 • © 2025 Crypto Treasury Tracker"
         "</p>", unsafe_allow_html=True
     )
 
     # render selected page & log info
 
-    if section == "🌎 Global Overview":
-        log_page_once("global_summary")
+    if section == "Dashboard":
+        log_page_once("overview")
         overview.render_overview()
 
-    if section == "📊 Historic Holdings":
+    if section == "Global Map":
+        log_page_once("world_map")
+        global_.render_global()
+
+    if section == "Trends":
         log_page_once("history")
         historic.render_historic_holdings()
 
-    if section == "🥇 Leaderboard":
+    if section == "Top Holders":
         log_page_once("leaderboard")
         ranking.render_entity_ranking()
 
-    if section == "🔍 Treasury Breakdown":
+    if section == "Distribution":
         log_page_once("treasury_breakdown")
         treasury_breakdown.render_treasury_breakdown()
 
-    if section == "ℹ️ About":
+    if section == "Concentration":
+        log_page_once("concentration")
+        concentration.render_concentration()
+
+    if section == "About":
         log_page_once("about")
         about.render_about()

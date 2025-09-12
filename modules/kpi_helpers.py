@@ -4,9 +4,11 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os, base64
+from modules.charts import render_rankings
+from modules.ui import render_plotly
 
 
-COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D", "Other": "rgba(255,255,255,0.9)"}
 
 _THIS = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = os.path.join(_THIS, "..", "assets")
@@ -61,28 +63,28 @@ def render_kpis(df):
         with st.container(border=True):
             st.metric("Total USD Value", f"${total_usd:,.0f}", help="Aggregate USD value of all tracked crypto assets across entities, based on live market pricing.")
 
-            # Custom progress bar styled as BTC (orange) + ETH (blue)
+            other_usd = max(total_usd - (btc_usd + eth_usd + sol_usd), 0)
+
             usd_pct = {
-                "BTC": btc_usd / total_usd if total_usd else 0.0,
-                "ETH": eth_usd / total_usd if total_usd else 0.0,
-                "SOL": sol_usd / total_usd if total_usd else 0.0,
+                "BTC": (btc_usd / total_usd) if total_usd else 0.0,
+                "ETH": (eth_usd / total_usd) if total_usd else 0.0,
+                "SOL": (sol_usd / total_usd) if total_usd else 0.0,
+                "Other": (other_usd / total_usd) if total_usd else 0.0,
             }
 
-            COLORS = {"BTC": "#f7931a", "ETH": "#6F6F6F", "SOL": "#dc1fff"}
-
             # Progress bar with hover tooltip
-
             st.markdown(
                 f"""
-                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;
+                            display:flex;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);'>
                     {''.join(
-                        f"<div title='{a}: {usd_pct[a]*100:.1f}% (${usd_val/1e9:.1f}B)' "
-                        f"style='width:{usd_pct[a]*100:.1f}%;background-color:{COLORS[a]};'></div>"
-                        for a, usd_val in [("BTC", btc_usd), ("ETH", eth_usd), ("SOL", sol_usd)]
-                        if usd_pct[a] > 0
+                        f"<div title='{a}: {usd_pct[a]*100:.1f}% (${val/1e9:.1f}B)' "
+                        f"style='width:{usd_pct[a]*100:.4f}%;background-color:{COLORS[a]};'></div>"
+                        for a, val in [("BTC", btc_usd), ("ETH", eth_usd), ("SOL", sol_usd), ("Other", other_usd)]
                     )}
                 </div>
-                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;display:flex;gap:12px;align-items:center;'>Dominance:
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;
+                            display:flex;gap:12px;align-items:center;'>Dominance:
                     <div style='display:flex;align-items:center;gap:6px;'>
                         <img src="data:image/png;base64,{btc_b64}" width="16" height="16"> {usd_pct["BTC"]*100:.1f}%
                     </div>
@@ -92,6 +94,10 @@ def render_kpis(df):
                     <div style='display:flex;align-items:center;gap:6px;'>
                         <img src="data:image/png;base64,{sol_b64}" width="16" height="16"> {usd_pct["SOL"]*100:.1f}%
                     </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <span style="display:inline-block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid rgba(255,255,255,0.9);vertical-align:middle"></span>
+                        {usd_pct["Other"]*100:.1f}%
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -100,28 +106,55 @@ def render_kpis(df):
             st.markdown("")
 
 
+    # ---- Adoption (entities) with OTH residual ----
     with col2:
         with st.container(border=True):
-            st.metric("Total Unique Entities", f"{total_entities}", help="Entities holding crypto assets directly, excluding ETFs and indirect vehicles. Note: some entities hold multiple crypto assets and are only counted once.")
+            st.metric(
+                "Total Unique Entities",
+                f"{total_entities}",
+                help="Entities holding crypto assets directly, excluding ETFs and indirect vehicles. Note: some entities hold multiple assets and are counted once."
+            )
 
-            ent_pct = {
-                "BTC": (btc_entities / total_entities if total_entities else 0.0),
-                "ETH": (eth_entities / total_entities if total_entities else 0.0),
-                "SOL": (sol_entities / total_entities if total_entities else 0.0),
+            # sets for exclusive partition (BTC first, then ETH not in BTC, then SOL not in BTC/ETH, then Other = none of these)
+            btc_set = set(btc_df["Entity Name"].unique())
+            eth_set = set(eth_df["Entity Name"].unique())
+            sol_set = set(sol_df["Entity Name"].unique())
+            union_bes = btc_set | eth_set | sol_set
+
+            btc_excl = len(btc_set)
+            eth_excl = len(eth_set - btc_set)
+            sol_excl = len(sol_set - btc_set - eth_set)
+            oth_excl = max(total_entities - len(union_bes), 0)
+
+            pct_excl = {
+                "BTC": (btc_excl / total_entities) if total_entities else 0.0,
+                "ETH": (eth_excl / total_entities) if total_entities else 0.0,
+                "SOL": (sol_excl / total_entities) if total_entities else 0.0,
+                "Other": (oth_excl / total_entities) if total_entities else 0.0,
             }
-            ENT_COUNTS = {"BTC": btc_entities, "ETH": eth_entities, "SOL": sol_entities}
-            ENT_COLORS = {"BTC": COLORS["BTC"], "ETH": COLORS["ETH"], "SOL": COLORS["SOL"]}
+
+            # display counts (keep your original per-asset counts; Other uses the disjoint count)
+            ENT_COUNTS = {"BTC": btc_entities, "ETH": eth_entities, "SOL": sol_entities, "Other": oth_excl}
+
+            ENT_COLORS = {
+                "BTC": COLORS["BTC"],   # from your first KPI card
+                "ETH": COLORS["ETH"],
+                "SOL": COLORS["SOL"],
+                "Other": COLORS["Other"],  # white
+            }
 
             st.markdown(
                 f"""
-                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;display:flex;overflow:hidden;'>
+                <div style='background-color:#1e1e1e;border-radius:8px;height:20px;width:100%;
+                            display:flex;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);'>
                     {''.join(
-                        f"<div title='{k}: {ENT_COUNTS[k]} ({ent_pct[k]*100:.1f}%)' "
-                        f"style='width:{ent_pct[k]*100:.1f}%;background-color:{ENT_COLORS[k]};'></div>"
-                        for k in ["BTC","ETH","SOL"] if ent_pct[k] > 0
+                        f"<div title='{k}: {ENT_COUNTS[k]} ({pct_excl[k]*100:.1f}%)' "
+                        f"style='width:{pct_excl[k]*100:.4f}%;background-color:{ENT_COLORS[k]};'></div>"
+                        for k in ["BTC","ETH","SOL","Other"]
                     )}
                 </div>
-                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;display:flex;gap:12px;align-items:center;'>Adoption:
+                <div style='margin-top:8px;margin-bottom:5px;font-size:16px;color:#aaa;
+                            display:flex;gap:12px;align-items:center;'>Adoption:
                     <div style='display:flex;align-items:center;gap:6px;'>
                         <img src="data:image/png;base64,{btc_b64}" width="16" height="16"> {btc_entities}
                     </div>
@@ -131,12 +164,17 @@ def render_kpis(df):
                     <div style='display:flex;align-items:center;gap:6px;'>
                         <img src="data:image/png;base64,{sol_b64}" width="16" height="16"> {sol_entities}
                     </div>
+                    <div style='display:flex;align-items:center;gap:6px;'>
+                        <span style="display:inline-block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:10px solid rgba(255,255,255,0.9);vertical-align:middle"></span>
+                        {oth_excl}
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
             st.markdown("")
+
 
 
 
@@ -257,6 +295,42 @@ def render_kpis(df):
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
+# Top 5 Holders Chart
+def top_5_holders(df, asset="BTC", key_prefix="top5"):
+    with st.container(border=True):
+        logo_b64 = {"BTC": btc_b64, "ETH": eth_b64, "SOL": sol_b64}.get(asset)
+        st.markdown(
+            f'''
+            #### Top 5 {asset} Treasury Holders <img src="data:image/png;base64,{logo_b64}" style="height:26px; vertical-align: middle; margin: 0 4px 4px;">
+            ''',
+            unsafe_allow_html=True,
+            help=f"List of top 5 entities by {asset} treasury holdings shown in units or USD value."
+        )
+
+        mode = st.radio(
+            "Display mode",
+            ["USD Value", "Unit Count"],
+            index=1,
+            horizontal=True,
+            label_visibility="collapsed",
+            key=f"{key_prefix}_{asset}_mode"
+        )
+        by = "units" if mode == "Unit Count" else "usd"
+
+        fig = render_rankings(df, asset=asset, by=by)
+        render_plotly(
+            fig,
+            filename=f"top_5_{asset.lower()}_holders",
+            use_container_width=True,
+            extra_config={
+                "displaylogo": False,
+                "displayModeBar": False,
+                "staticPlot": True,
+                "scrollZoom": False,
+                "doubleClick": False,
+                "showTips": False,
+            }
+        )
 
 # Historic KPIs
 def _latest_and_prev_dates(dates: pd.Series):
@@ -410,7 +484,9 @@ def render_historic_kpis(df_filtered: pd.DataFrame):
             cagr_usd = (((latest_total_usd_cagr / first_total_usd_cagr) ** (12 / n_months_cagr)) - 1) * 100.0 \
                 if (first_total_usd_cagr is not None and first_total_usd_cagr > 0 and n_months_cagr > 0) else None
 
-        col1.metric(
+        with col1:
+            with st.container(border=True):
+                st.metric(
             "Current Value (USD) vs Last Month",
             value=f"${cur_usd:,.0f}",
             delta=(f"{cur_vs_last_usd_pct:+.1f}%" if cur_vs_last_usd_pct is not None else None),
@@ -418,14 +494,18 @@ def render_historic_kpis(df_filtered: pd.DataFrame):
             help="Current total USD value under the selected filters, with % change vs the last month. Note: Adjustment of −91,331 BTC applied for historical consistency with latest reported holdings due to data source inconsistencies."
         )
 
-        col2.metric(
+        with col2:
+            with st.container(border=True):
+                st.metric(
             "YTD Change (USD)",
             value=_fmt_pct_value(ytd_change_usd),
             delta_color="normal",
             help="Change since prior year‑end (Dec), based on USD value."
         )
 
-        col3.metric(
+        with col3:
+            with st.container(border=True):
+                st.metric(
             "CAGR (USD)",
             value=_fmt_pct_value(cagr_usd),
             help=("Compound annual growth rate based on USD value. "
@@ -463,26 +543,212 @@ def render_historic_kpis(df_filtered: pd.DataFrame):
 
                 c1, c2, c3 = st.columns(3)
 
-                c1.metric(
-                    f"Current ({single_asset} units) vs Last Month",
-                    value=(f"{int(cur_units):,}" if cur_units is not None and cur_units >= 1 else f"{(cur_units or 0):,.2f}"),
-                    delta=(f"{cur_vs_last_units_pct:+.1f}%" if cur_vs_last_units_pct is not None else None),
-                    delta_color="normal",
-                    help=f"Current {single_asset} units under the selected filters, with % change vs the last month. Note: Adjustment of −91,331 BTC applied for historical consistency with latest reported holdings due to data source inconsistencies."
-                )
+                with c1:
+                    with st.container(border=True):
+                        st.metric(
+                            f"Current ({single_asset} units) vs Last Month",
+                            value=(f"{int(cur_units):,}" if cur_units is not None and cur_units >= 1 else f"{(cur_units or 0):,.2f}"),
+                            delta=(f"{cur_vs_last_units_pct:+.1f}%" if cur_vs_last_units_pct is not None else None),
+                            delta_color="normal",
+                            help=f"Current {single_asset} units under the selected filters, with % change vs the last month. Note: Adjustment of −91,331 BTC applied for historical consistency with latest reported holdings due to data source inconsistencies."
+                        )
 
-                c2.metric(
-                    f"YTD ({single_asset} units)",
-                    value=_fmt_pct_value(ytd_change_units),
-                    delta_color="normal",
-                    help=f"Change since prior year‑end (Dec), in {single_asset} units. "
-                )
-                c3.metric(
-                    f"CAGR ({single_asset} units)",
-                    value=_fmt_pct_value(cagr_units),
-                    help=(f"Compound annual growth rate in {single_asset} units. "
-                        "Uses last 12 months if available, otherwise all available data.")
-                )
+                with c2:
+                    with st.container(border=True):
+                        st.metric(                            f"YTD ({single_asset} units)",
+                            value=_fmt_pct_value(ytd_change_units),
+                            delta_color="normal",
+                            help=f"Change since prior year‑end (Dec), in {single_asset} units. "
+                        )
+                with c3:
+                    with st.container(border=True):
+                        st.metric(                            f"CAGR ({single_asset} units)",
+                            value=_fmt_pct_value(cagr_units),
+                            help=(f"Compound annual growth rate in {single_asset} units. "
+                                "Uses last 12 months if available, otherwise all available data.")
+                        )
 
             else:
                 st.caption("Select a single asset to view unit‑based KPIs.")
+
+
+def _coerce_num(s: pd.Series) -> pd.Series:
+    """Parse numbers from both US and EU formats. Returns float Series."""
+    s1 = pd.to_numeric(s, errors="coerce")
+    if s1.isna().mean() > 0.5:
+        s_alt = (s.astype(str)
+                   .str.replace(r"\s", "", regex=True)
+                   .str.replace(".", "", regex=False)
+                   .str.replace(",", ".", regex=False))
+        s1 = pd.to_numeric(s_alt, errors="coerce")
+    return s1
+
+def _fmt_usd(x: float) -> str:
+    try:
+        if abs(x) >= 1e9:  return f"${x/1e9:,.1f}B"
+        if abs(x) >= 1e6:  return f"${x/1e6:,.1f}M"
+        if abs(x) >= 1e3:  return f"${x/1e3:,.1f}K"
+        return f"${x:,.0f}"
+    except Exception:
+        return "$0"
+
+def _prep_history(hist: pd.DataFrame) -> pd.DataFrame:
+    """Normalize columns, ensure numerics, derive Price USD if missing, ffill/bfill per asset."""
+    h = hist.copy()
+    if "Date" not in h.columns:
+        if "date" in h.columns:
+            h["Date"] = pd.to_datetime(h["date"])
+        else:
+            h["Date"] = pd.to_datetime(dict(year=h["Year"], month=h["Month"], day=1), errors="coerce")
+
+    h = h.rename(columns=lambda c: str(c).strip())
+    alias = {
+        "Price": "Price USD", "Price_USD": "Price USD",
+        "USD": "USD Value",   "USD_Value": "USD Value",
+        "Holdings": "Holdings (Unit)", "Units": "Holdings (Unit)",
+    }
+    for k, v in alias.items():
+        if k in h.columns and v not in h.columns:
+            h.rename(columns={k: v}, inplace=True)
+
+    for col in ["Holdings (Unit)", "USD Value", "Price USD"]:
+        if col not in h.columns:
+            h[col] = np.nan
+
+    h["Holdings (Unit)"] = _coerce_num(h["Holdings (Unit)"])
+    h["USD Value"]       = _coerce_num(h["USD Value"])
+    h["Price USD"]       = _coerce_num(h["Price USD"])
+
+    need_p = h["Price USD"].isna()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        implied = h["USD Value"] / h["Holdings (Unit)"]
+    h.loc[need_p, "Price USD"] = implied[need_p]
+
+    need_usd = h["USD Value"].isna() & h["Price USD"].notna() & h["Holdings (Unit)"].notna()
+    h.loc[need_usd, "USD Value"] = h.loc[need_usd, "Price USD"] * h.loc[need_usd, "Holdings (Unit)"]
+
+    h = h.sort_values(["Crypto Asset", "Date"]).reset_index(drop=True)
+    h["Price USD"] = h["Price USD"].groupby(h["Crypto Asset"], sort=False).transform(lambda s: s.ffill().bfill())
+    return h
+
+def _decompose_asset(g: pd.DataFrame) -> pd.DataFrame:
+    """Exact ΔUSD decomposition per asset:
+       ΔUSD = units_prev * Δprice  +  price_curr * Δunits
+    """
+    g = g.sort_values("Date").copy()
+    g["units_prev"] = g["Holdings (Unit)"].shift()
+    g["price_prev"] = g["Price USD"].shift()
+    g["d_usd"] = g["USD Value"].diff()
+    g["price_effect"] = (g["Price USD"] - g["price_prev"]) * g["units_prev"]
+    g["units_effect"] = (g["Holdings (Unit)"] - g["units_prev"]) * g["Price USD"]
+    g = g.dropna(subset=["d_usd", "price_effect", "units_effect"])
+    return g
+
+def render_flow_decomposition(df_hist_filtered: pd.DataFrame):
+    """
+    Render 'Flow & Decomposition (Price vs Accumulation)' using the ALREADY-filtered historic df.
+    Expect df_hist_filtered to respect your apply_filters_historic (assets + time).
+    """
+
+    if df_hist_filtered.empty:
+        st.info("No historic data for the current filters.")
+        return
+
+    hist = _prep_history(df_hist_filtered)
+
+    with st.container(border=True):
+        st.markdown("### Flow & Decomposition (Price vs Accumulation)", help="Shows whether growth came from new units or price beta by splitting monthly USD Delta into “Delta Price on prior units” vs “Delta Units at current price”.")
+
+        c1, c2 = st.columns([1, 1])
+
+        # Single-asset toggle (aggregated vs one asset)
+        view_mode = c1.radio(
+            "View",
+            ["Aggregated (selected assets)", "Single asset"],
+            index=0,
+            horizontal=True,
+            help="Aggregate sums across selected assets or inspect a single asset."
+        )
+        if view_mode == "Single asset":
+            assets_in_scope = sorted(hist["Crypto Asset"].dropna().unique().tolist())
+            asset_pick = c2.selectbox("Asset", assets_in_scope, index=0)
+        else:
+            asset_pick = None
+
+        # Decompose per asset, then aggregate if needed
+        decomp = (hist.groupby("Crypto Asset", group_keys=True)
+                        .apply(_decompose_asset)
+                        .reset_index(drop=True))
+
+        if decomp.empty:
+            st.info("Not enough monthly history to compute flows for the current selection.")
+            return
+
+        if asset_pick:
+            view = decomp[decomp["Crypto Asset"] == asset_pick].copy()
+            bar_color_price = "#8892a6"
+            bar_color_units = COLORS.get(asset_pick, "#43d1a0")
+        else:
+            view = (decomp.groupby("Date")[["d_usd", "price_effect", "units_effect"]]
+                          .sum()
+                          .reset_index())
+            bar_color_price = "#8892a6"
+            bar_color_units = "#43d1a0"
+
+        # KPIs (last month)
+        last = view.sort_values("Date").tail(1)
+        d_usd = float(last["d_usd"].iloc[0]) if not last.empty else 0.0
+        pe    = float(last["price_effect"].iloc[0]) if not last.empty else 0.0
+        ue    = float(last["units_effect"].iloc[0]) if not last.empty else 0.0
+
+        k1, k2, k3 = st.columns(3)
+        with k1:
+            with st.container(border=True):
+                st.metric("ΔUSD (last month)", _fmt_usd(d_usd))
+        with k2:
+            with st.container(border=True):
+                st.metric("Price contribution", _fmt_usd(pe),
+                  help="Effect from price changing on prior units.")
+        with k3:
+            with st.container(border=True):
+                st.metric("Units contribution", _fmt_usd(ue),
+                  help="Effect from accumulation/reduction of units at current price.")
+
+        # Chart
+        fig = go.Figure()
+        fig.add_bar(
+            name="Price effect",
+            x=view["Date"], y=view["price_effect"],
+            marker_color=bar_color_price,
+            hovertemplate="Date: %{x|%b %Y}<br>Price: %{y:$,.0f}<extra></extra>",
+        )
+        fig.add_bar(
+            name="Units effect",
+            x=view["Date"], y=view["units_effect"],
+            marker_color=bar_color_units,
+            hovertemplate="Date: %{x|%b %Y}<br>Units: %{y:$,.0f}<extra></extra>",
+        )
+        fig.update_layout(
+            barmode="relative",
+            height=360,
+            margin=dict(l=40, r=20, t=10, b=30),
+            xaxis=dict(title="", tickformat="%b %Y"),
+            yaxis=dict(title="ΔUSD", tickprefix="$"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+            hoverlabel=dict(align="left"),
+        )
+        # Watermark
+        fig.add_annotation(
+            text="Crypto Treasury Tracker",
+            x=0.5, y=0.95,
+            xref="paper", yref="paper",
+            showarrow=False,
+            font=dict(size=30, color="white"),
+            opacity=0.3,
+            xanchor="center",
+            yanchor="top",
+        )
+        render_plotly(fig, filename=f"flows_{asset_pick or 'agg'}".lower(), use_container_width=True)
+
+        st.caption("Note: Decomposition uses **asset-level monthly aggregates**; it respects the *filters (assets + time)*. "
+                   "Entity Type and Country filters are not applied unless history exists at that granularity.")

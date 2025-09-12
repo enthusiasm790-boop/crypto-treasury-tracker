@@ -3,7 +3,7 @@ import pandas as pd
 
 from modules.filters import apply_filters_historic
 from modules.charts import historic_chart, cumulative_market_cap_chart, dominance_area_chart_usd
-from modules.kpi_helpers import render_historic_kpis
+from modules.kpi_helpers import render_historic_kpis, render_flow_decomposition
 from modules.ui import render_plotly
 
 
@@ -31,6 +31,7 @@ def render_historic_holdings():
             fig_dom = dominance_area_chart_usd(df_filtered, current_df=st.session_state.get("data_df"))
             render_plotly(fig_dom, "dominance_usd_area")
 
+    render_flow_decomposition(df_filtered)
 
     with st.container(border=True):
         st.markdown("#### Historic Crypto Treasury Holdings Breakdown", help="Shows the historic development of aggregated and individual crypto asset holdings across all entities")
@@ -39,3 +40,4 @@ def render_historic_holdings():
         by = "USD" if metric == "USD Value" else "Holdings (Unit)"
 
         render_plotly(historic_chart(df_filtered, by=by), "historic_crypto_reserves")
+        

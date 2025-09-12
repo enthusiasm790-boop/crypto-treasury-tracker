@@ -13,3 +13,4 @@ dependencies:
       - altair
       - posthog>=3.5.1,<4
       - extra-streamlit-components>=0.1.71
+      - fpdf2

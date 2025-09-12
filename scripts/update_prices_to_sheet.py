@@ -4,8 +4,22 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # === Configure assets and CoinGecko mapping ===
-ASSETS = ["BTC", "ETH", "SOL"]  
-COINGECKO_IDS = {"BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana"}
+ASSETS = [
+    "BTC", 
+    "ETH", 
+    "SOL",
+    "XRP",
+    "SUI",
+    "LTC",
+    ]  
+COINGECKO_IDS = {
+    "BTC": "bitcoin", 
+    "ETH": "ethereum",
+    "XRP": "ripple",
+    "SOL": "solana",
+    "SUI": "sui",
+    "LTC": "litecoin",
+    }
 
 # === Google Sheet target ===
 SHEET_NAME = "master_table_v01"

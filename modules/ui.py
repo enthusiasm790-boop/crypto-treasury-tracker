@@ -15,6 +15,9 @@ _ASSETS = os.path.join(_THIS, "..", "assets")
 btc_b64 = load_base64_image(os.path.join(_ASSETS, "bitcoin-logo.png"))
 eth_b64 = load_base64_image(os.path.join(_ASSETS, "ethereum-logo.png"))
 sol_b64 = load_base64_image(os.path.join(_ASSETS, "solana-logo.png"))
+sui_b64 = load_base64_image(os.path.join(_ASSETS, "sui-logo.png"))
+ltc_b64 = load_base64_image(os.path.join(_ASSETS, "litecoin-logo.png"))
+xrp_b64 = load_base64_image(os.path.join(_ASSETS, "xrp-logo.png"))
 
 cg_b64  = load_base64_image(os.path.join(_ASSETS, "coingecko-logo.png"))
 logo_b64 = load_base64_image(os.path.join(_ASSETS, "ctt-symbol.svg"))
@@ -22,10 +25,14 @@ logo_loading = load_base64_image(os.path.join(_ASSETS, "ctt-logo.svg"))
 
 CTA_URL = "https://digitalfinancebriefing.substack.com/?utm_source=ctt_app&utm_medium=sidebar_cta&utm_campaign=subscribe"
 SUPPORT_URL = "https://buymeacoffee.com/cryptotreasurytracker"
+
 def render_header():
     btc = st.session_state["prices"][0]
     eth = st.session_state["prices"][1]
     sol = st.session_state["prices"][2]
+    sui = st.session_state["prices"][3]
+    ltc = st.session_state["prices"][4]
+    xrp = st.session_state["prices"][5]
 
     st.markdown(
         """
@@ -45,6 +52,15 @@ def render_header():
         &nbsp;&nbsp;
         <img src="data:image/png;base64,{sol_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
         <b>${sol:,.2f}</b>
+        &nbsp;&nbsp;
+        <img src="data:image/png;base64,{xrp_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
+        <b>${xrp:,.2f}</b>
+        &nbsp;&nbsp;
+        <img src="data:image/png;base64,{sui_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
+        <b>${sui:,.2f}</b>
+        &nbsp;&nbsp;
+        <img src="data:image/png;base64,{ltc_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
+        <b>${ltc:,.2f}</b>
         &nbsp;&nbsp;
         | Powered by
         <img src="data:image/png;base64,{cg_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-left:4px;margin-right:0px;">
@@ -81,7 +97,7 @@ def render_support():
     st.sidebar.write(" ")
 
     st.sidebar.link_button(
-        "Support This Project ❤️",
+        "Support The CTT ❤️",
         SUPPORT_URL,
         type="secondary",
         use_container_width=True,

@@ -20,24 +20,30 @@ def render_treasury_breakdown():
         entity_count = df_filtered['Entity Name'].nunique()
         avg_value = df_filtered.groupby('Entity Name')['USD Value'].sum().mean()
 
-        col1.metric(
-            "Total USD Value",
-            f"${total_value:,.0f}",
-            help="Sum of all reported crypto reserves for the selected filters, converted to USD using the latest available prices."
-        )
-        col2.metric(
-            "Number of Entities",
-            f"{entity_count}",
-            help="Count of unique entities reporting crypto reserves under the selected filters."
-        )
-        col3.metric(
-            "Avg. USD Value per Entity",
-            f"${avg_value:,.0f}",
-            help="Average USD value of reserves held per reporting entity under the selected filters."
-        )
+        with col1:
+            with st.container(border=True):
+                st.metric(
+                    "Total USD Value",
+                    f"${total_value:,.0f}",
+                    help="Sum of all reported crypto reserves for the selected filters, converted to USD using the latest available prices."
+                )
+        with col2:
+            with st.container(border=True):
+                st.metric(
+                    "Number of Entities",
+                    f"{entity_count}",
+                    help="Count of unique entities reporting crypto reserves under the selected filters."
+                )
+        with col3:
+            with st.container(border=True):
+                st.metric(
+                    "Avg. USD Value per Entity",
+                    f"${avg_value:,.0f}",
+                    help="Average USD value of reserves held per reporting entity under the selected filters."
+                )
 
     # Charts row
-    row1_col1, row1_col2, row1_col3 = st.columns([1, 1, 1])
+    row1_col1, row1_col2, row1_col3= st.columns([1, 1, 1])
 
     with row1_col1:
         with st.container(border=True):
@@ -64,3 +70,16 @@ def render_treasury_breakdown():
                 fig_country = charts.top_countries_by_usd_value(df_filtered)
 
             render_plotly(fig_country, "top_5_countries")
+        
+    with st.container(border=True):
+        st.markdown(
+            "#### Current Crypto Treasury Distribution",
+            help="Switch between Country+Entity Type and Entity Type+Entity Name views; area size based on USD value."
+        )
+        layout_choice = st.radio(
+            "Treemap layout",
+            ["Entity Distribution", "Geographic Distribution"],
+            index=0, horizontal=True, label_visibility="collapsed"
+        )
+        mode = "country_type" if "Geographic Distribution" in layout_choice else "type_entity"
+        render_plotly(charts.treemap_composition(df_filtered, mode=mode), "treemap_composition")

@@ -24,13 +24,14 @@ def render_about():
     with st.container(border=True):
         st.markdown(
             """
-            <h5 style="margin-top: 0;">Data Sources</h4>
+            <h5 style="margin-top: 0;">Data Sources</h5>
 
             <ul>
                 <li>Live crypto price feeds via <a href="https://docs.coingecko.com/reference/simple-price" target="_blank">CoinGecko API</a>, automatically refreshed every hour</li>
-                <li>Treasury data is updated weekly and based on external sources, for example, <a href="https://bitcointreasuries.net/" target="_blank">bitcointreasuries.net</a>, <a href="https://www.strategicethreserve.xyz/?ref=bankless.ghost.io" target="_blank">strategicethreserve.xyz</a>, and other verified data sources (e.g., corporate press release).</li>
+                <li>Treasury data is updated weekly and based on external sources such as <a href="https://bitcointreasuries.net/" target="_blank">bitcointreasuries.net</a>, <a href="https://www.strategicethreserve.xyz/?ref=bankless.ghost.io" target="_blank">strategicethreserve.xyz</a>, corporate filings, and verified press releases</li>
+                <li>Equity market data is retrieved real-time via Google Finance for supported tickers, enabling market-cap based metrics</li>
+                <li>Key metrics such as <strong>mNAV</strong> (Market Cap ÷ Crypto NAV), <strong>Premium/Discount</strong> ((mNAV − 1) × 100%), and <strong>TTMCR</strong> (Crypto NAV ÷ Market Cap) are calculated dynamically from the latest data</li>
             </ul>
-            </div>
             """,
             unsafe_allow_html=True
         )
@@ -41,7 +42,7 @@ def render_about():
             """
             <h5 style="margin-top: 0;">Planned Features</h4>
             <ul>
-                <li>More nuanced reserve data: sector, purpose, NAV, % of total treasury, and more</li>
+                <li>More detailled data: sector, purpose, historic purchases, funding vehicles, and more</li>
                 <li>Inclusion of new crypto assets, spot digital asset ETFs, and DeFi/smart contract-based treasuries</li>
                 <li>News and treasury announcements to track strategic moves in real time</li>
             </ul>
