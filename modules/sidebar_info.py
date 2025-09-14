@@ -1,6 +1,6 @@
 import streamlit as st
 import base64, mimetypes
-from sections import overview, global_, historic, ranking, treasury_breakdown, about, concentration
+from sections import overview, global_, historic, ranking, treasury_breakdown, about, concentration, valuation
 from modules.ui import render_header, render_subscribe_cta, render_support
 from analytics import log_page_once
 
@@ -25,6 +25,7 @@ def render_sidebar():
                                     "Top Holders",
                                     "Distribution",
                                     "Concentration",
+                                    "Valuation Insights",
                                     "About"
                                 ]
                                 , label_visibility = "visible")
@@ -32,7 +33,7 @@ def render_sidebar():
     st.sidebar.write(" ")
 
     # --- Reset filters ---
-    if st.sidebar.button("Reset Filters", type="primary", use_container_width=True):
+    if st.sidebar.button("Reset Filters", type="primary", width="stretch"):
         # state defaults
         st.session_state["flt_assets"] = st.session_state["opt_assets"]
         st.session_state["flt_entity_type"] = "All"
@@ -132,6 +133,10 @@ def render_sidebar():
         log_page_once("concentration")
         concentration.render_concentration()
 
+    if section == "Valuation Insights":
+        log_page_once("valuation")
+        valuation.render_valuation_insights()
+        
     if section == "About":
         log_page_once("about")
         about.render_about()

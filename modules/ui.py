@@ -81,7 +81,7 @@ def render_subscribe_cta():
         "📥  Sign up for the monthly Crypto Treasury Report",
         CTA_URL,
         type="secondary",
-        use_container_width=True,
+        width="stretch",
         help="Click here to sign up for the monthly Crypto Treasury Report."
     )
     st.sidebar.write(" ")
@@ -100,7 +100,7 @@ def render_support():
         "Support The CTT ❤️",
         SUPPORT_URL,
         type="secondary",
-        use_container_width=True,
+        width="stretch",
         help="Click here to help keeping the Tracker running & updated."
     )
 
@@ -142,7 +142,7 @@ def show_global_loader(msg="Loading data"):
     return placeholder
 
 
-def render_plotly(fig, filename: str, use_container_width: bool = True, scale: int = 3, fmt: str = "png", extra_config: dict | None = None):
+def render_plotly(fig, filename: str, width: str = "stretch", scale: int = 3, fmt: str = "png", extra_config: dict | None = None):
     """
     Render a Plotly figure with consistent high-res download settings.
     - fig: Plotly figure object
@@ -162,4 +162,4 @@ def render_plotly(fig, filename: str, use_container_width: bool = True, scale: i
     if extra_config:
         config.update(extra_config)
         
-    st.plotly_chart(fig, use_container_width=use_container_width, config=config)
+    st.plotly_chart(fig, width=width, config=config)

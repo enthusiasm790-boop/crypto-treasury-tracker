@@ -84,6 +84,7 @@ def _table_pdf_bytes(df, logo_map, title="Treasury ranking list"):
     # --- Title (aligned logo) ---
     title_h = 8.0
     title_y = pdf.get_y()
+
     pdf.set_font("Helvetica", "B", 14)
     pdf.cell(0, title_h, title, ln=1)
     pdf.ln(2)

@@ -292,7 +292,7 @@ def render_kpis(df):
             add_logo_and_pct(fig, 1, eth_b64, f"{eth_pct_supply:.2%}")
             add_logo_and_pct(fig, 2, sol_b64, f"{sol_pct_supply:.2%}")
 
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 
 # Top 5 Holders Chart
@@ -321,7 +321,7 @@ def top_5_holders(df, asset="BTC", key_prefix="top5"):
         render_plotly(
             fig,
             filename=f"top_5_{asset.lower()}_holders",
-            use_container_width=True,
+            width="stretch",
             extra_config={
                 "displaylogo": False,
                 "displayModeBar": False,
@@ -748,7 +748,7 @@ def render_flow_decomposition(df_hist_filtered: pd.DataFrame):
             xanchor="center",
             yanchor="top",
         )
-        render_plotly(fig, filename=f"flows_{asset_pick or 'agg'}".lower(), use_container_width=True)
+        render_plotly(fig, filename=f"flows_{asset_pick or 'agg'}".lower(), width="stretch")
 
         st.caption("Note: Decomposition uses **asset-level monthly aggregates**; it respects the *filters (assets + time)*. "
                    "Entity Type and Country filters are not applied unless history exists at that granularity.")

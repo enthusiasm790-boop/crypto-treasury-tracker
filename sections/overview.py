@@ -22,13 +22,26 @@ supply_caps = {
     }
 
 TRUE_DAT_WHITELIST = {
-    "BTC": {"MSTR", "CEP", "BSTR", "MTPLF", "CCCM", "ALCPB", "OTCMKTS:HOGPF", "BTCT.V", "MKBN", "ABTC", "KOSDAQ:288330"},
-    "ETH": {"BMNR", "SBET", "ETHM", "ETHZ", "FGNX", "GAME", "CTARF"},
-    "SOL": {"UPXI", "DFDV", "STSS", "KIDZ", "STKE"},
-    "LTC": {"LITS"},
-    #"XRP": {},
-    #"SUI": {},
+    "BTC": {"Strategy Inc.", "Twenty One Capital (XXI)", "Bitcoin Standard Treasury Company", "Metaplanet Inc.", "ProCap Financial, Inc", "Capital B", "H100 Group", #7 
+            "Bitcoin Treasury Corporation", "Treasury B.V.", "American Bitcoin Corp.", "Parataxis Holdings LLC", "Strive Asset Management", "ArcadiaB", "Cloud Ventures", #7
+            "Stacking Sats, Inc.", "Melanion Digital"}, #2
+    "ETH": {"BitMine Immersion Technologies, Inc.", "SharpLink Gaming", "The Ether Machine", "ETHZilla Corporation", "FG Nexus", "GameSquare Holdings", "Centaurus Energy Inc."},
+    "SOL": {"Upexi, Inc.", "DeFi Development Corp.", "Sharps Technology, Inc.", "Classover Holdings, Inc.", "Sol Strategies, Inc.", "Sol Treasury Corp."},
+    "LTC": {"Lite Strategy, Inc."},
+    "XRP": set(),
+    "SUI": set(),
 }
+
+
+def pretty_usd(x):
+    if pd.isna(x):
+        return "-"
+    ax = abs(x)
+    if ax >= 1e12:  return f"${x/1e12:.2f}T"
+    if ax >= 1e9:  return f"${x/1e9:.2f}B"
+    if ax >= 1e6:  return f"${x/1e6:.2f}M"
+    if ax >= 1e3:  return f"${x/1e3:.2f}K"
+    return f"${x:,.0f}"
 
 def _df_auto_height(n_rows: int, row_px: int = 35) -> int:
     # header ≈ one row + thin borders
@@ -101,22 +114,65 @@ def render_overview():
             cols.insert(insert_pos, "% of Supply")
             table = table[cols]
 
-        # asset toggle
-        options = ["All"] + sorted(table["Crypto Asset"].unique().tolist())
-        c1_kpi, c2_kpi, c3_kpi, c4_kpi = st.columns([1,0.5,0.5,1])
-        
+        c1_kpi, c2_kpi, c3_kpi, c4_kpi, c5_kpi = st.columns([1,0.5,0.5,0.5,0.5])
+
+        # all list option
+        options = ["All", "DATCOs"] + sorted(table["Crypto Asset"].dropna().unique().tolist())
+
         with c1_kpi:
-            asset_choice = st.radio("Select Asset List", options=options, index=0, horizontal=True, label_visibility="visible", key="tbl_asset_filter")
-
-        c1, c2, c3 = st.columns(3)
-
-        with c1:
-            row_count = st.selectbox(
-                "Select Rows to Display",
-                options=[5, 10, 20, 25, 50, 100],
-                index=2,
-                key="tbl_rows",
+            list_choice = st.radio(
+                "Select List",
+                options=options,
+                index=0,
+                horizontal=True,
+                label_visibility="visible",
+                key="tbl_asset_filter",
             )
+
+        # apply selection
+        if list_choice == "DATCOs":
+            # union whitelist across assets present in the current table
+            assets_present = sorted(table["Crypto Asset"].dropna().unique().tolist())
+            whitelist_sets = [TRUE_DAT_WHITELIST.get(a, set()) for a in assets_present]
+            active_whitelist = set().union(*whitelist_sets) if whitelist_sets else set()
+
+            if "Entity Name" in table.columns:
+                names_upper = table["Entity Name"].astype(str)
+                table = table[names_upper.isin(active_whitelist)]  # <<< filter TABLE, not df!
+
+            asset_choice = "All"
+
+        else:
+            asset_choice = list_choice
+            if asset_choice != "All":
+                table = table[table["Crypto Asset"] == asset_choice]
+
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        # --- search by entity name ---
+        with c1:
+            name_query = st.text_input(
+                "Search Entity",
+                value="",
+                placeholder="Type a company name…",
+                key="tbl_search",
+                help="Filter the list by entity name."
+            )
+
+        if name_query:
+            table_search = table[table["Entity Name"].astype(str).str.contains(name_query, case=False, na=False)]
+        else:
+            table_search = table
+
+        len_table = table_search.shape[0]
+
+        if list_choice == "DATCOs":
+            default_rows = len_table  # always show full set
+        elif list_choice == "All":
+            default_rows = min(100, len_table)
+        else:
+            default_rows = min(100, len_table)
             
         with c2:
             if "ui_entity_type" not in st.session_state:
@@ -138,12 +194,19 @@ def render_overview():
             )
             st.session_state["flt_country"] = sel_co
 
+        with c4:
+            row_count = st.number_input(
+                f"Adjust List (Total # {len_table})",
+                1, max(1, len_table), default_rows,  # guard: max at least 1
+                help="Select number of crypto treasury holders to display, sorted by USD value.",
+                key="tbl_rows",
+            )
+
         # apply global filters plus the local asset toggle
-        filtered = table.copy()
+        filtered = table_search.copy()
 
         assets_sel = [asset_choice] if asset_choice != "All" else st.session_state.get("flt_assets", st.session_state["opt_assets"])
         filtered = filtered[filtered["Crypto Asset"].isin(assets_sel)]
-
 
         et = st.session_state.get("flt_entity_type", "All")
         if et != "All":
@@ -169,34 +232,65 @@ def render_overview():
         valid = filtered.replace([np.inf, -np.inf], np.nan)
         valid = valid[(valid["mNAV"] > 0) & (valid["TTMCR"] > 0)]
 
-        # existing KPIs
-        avg_mnav = valid["mNAV"].mean()
-        avg_ttmcr = valid["TTMCR"].mean()
+        # Aggregate mNAV + TTMCR KPIs
+        avg_mnav = valid["mNAV"].median()
+        avg_ttmcr = valid["TTMCR"].median()
+        valid_true = valid[valid["Entity Name"].isin(active_whitelist)]
+        avg_mnav_true = valid_true["mNAV"].median()
 
-        # new KPI for true DATCOs only
-        valid_true = valid[valid["Ticker"].isin(active_whitelist)]
-        avg_mnav_true = valid_true["mNAV"].mean()
+        # use the same slice you render in st.dataframe
+        sub_2 = filtered.head(int(row_count)).copy()
+
+        # recompute DATCO mask on the sliced data
+        names_sub = sub_2["Entity Name"].astype(str)
+        datco_mask_sub = names_sub.isin(active_whitelist)
+
+        # --- DATCO Adoption (count + % of Crypto-NAV) ---
+        tickers_upper = filtered["Entity Name"].astype(str)
+        datco_mask    = tickers_upper.isin(active_whitelist)
+
+        # number of DATCO companies in current selection
+        datco_count   = tickers_upper[datco_mask].nunique()
+
+        nav_total = float(sub_2["USD Value"].sum())
+        nav_datco = float(sub_2.loc[datco_mask_sub, "USD Value"].sum())
+
+        def _fmt(x, pct=False):
+            if x is None or (isinstance(x, float) and np.isnan(x)):
+                return "-"
+            return f"{x:,.2f}%" if pct else f"{x:,.2f}"
 
         with c2_kpi:
-            st.metric(
-                "Avg. mNAV",
-                f"{avg_mnav:,.2f}",
-                help="Average market-to-NAV multiple across the current selection. mNAV is calculated by dividing the current market cap by crypto net asset value (NAV) in USD. A value above 1 means the equity trades at a premium to the underlying crypto NAV, while below 1 signals a discount. For example, an mNAV of 1.20 represents a 20% premium."
-            )
+            with st.container(border=True):
+                st.metric(
+                    "Total Crypto-NAV",
+                    f"{pretty_usd(nav_total)}",
+                    help=("Total value of selected crypto treasury companies (Crypto-NAV).")
+                )
 
         with c3_kpi:
-            st.metric(
-                "Avg. DATCO-only mNAV",
-                f"{avg_mnav_true:,.2f}",
-                help="Average mNAV filtered for Digital Asset Treasury (DAT) vehicles only, excluding companies that use crypto assets for operational or other functional purposes (e.g., mining activities). Current DATs include the following tickers (where data is publicly available): MSTR, CEP, BSTR, MTPLF, CCCM, ALCPB, HOGPF, BTCT.V, MKBN, ABTC, 288330.KQ, BMNR, SBET, ETHM, ETHZ, FGNX, GAME, CTARF, UPXI, DFDV, STSS, KIDZ, STKE, and LITS."
-            )
+            with st.container(border=True):
+                st.metric(
+                    f"Total DATCO Crypto-NAV ({datco_count})",
+                    f"{pretty_usd(nav_datco)}",
+                    help=("Share of aggregate Crypto-NAV of all Digital Asset Treasury Companies (DATCO) compared to all entities in the current selection in USD.")
+                )
 
         with c4_kpi:
-            st.metric(
-                "Avg. Treasury to Market Cap Ratio (TTMCR)",
-                f"{avg_ttmcr:,.2f}%",
-                help="The Treasury-to-Market Cap Ratio (TTMCR) shows the share of a company's value represented by held crypto reserves. It is calculated by dividing the crypto treasury (USD value) by the company's current market cap, shown as a percentage. For example, a TTMCR of 5% means that 5% of the company's market cap is backed by crypto assets."
-            )
+            with st.container(border=True):
+                st.metric(
+                    "DATCO mNAV (Median)",
+                    f"{_fmt(avg_mnav_true)}×",
+                    help="Median market to net asset value (mNAV) filtered for Digital Asset Treasury Companies (DATCO) only, excluding entities that use crypto assets for other strategic or operational purposes (e.g., mining activities). Current DATCOs include the following tickers (where data is publicly available): MSTR, NASDAQ:CEP, BSTR, MTPLF, CCCM, ALCPB, OTCMKTS:HOGPF, BTCT.V, MKBN, ABTC, 288330.KQ, BMNR, SBET, ETHM, ETHZ, FGNX, GAME, CTARF, UPXI, DFDV, STSS, KIDZ, STKE, and LITS."
+                )
+
+        with c5_kpi:
+            with st.container(border=True):
+                st.metric(
+                    "TTMCR (Median)",
+                    _fmt(avg_ttmcr, pct=True),
+                    help="The Treasury-to-Market Cap Ratio (TTMCR) shows the share of a company's value represented by held crypto reserves (unweighted). It is calculated by dividing the crypto treasury (USD value) by the company's current market cap, shown as a percentage. For example, a TTMCR of 5% means that 5% of the company's market cap is backed by crypto assets."
+                )
 
         sub = filtered.head(row_count)
 
@@ -222,16 +316,6 @@ def render_overview():
             "LTC": f"data:image/png;base64,{ltc_b64}",
         }
         display["Crypto Asset"] = display["Crypto Asset"].map(lambda a: logo_map.get(a, ""))
-
-        def pretty_usd(x):
-            if pd.isna(x):
-                return "-"
-            ax = abs(x)
-            if ax >= 1e12:  return f"${x/1e12:.2f}T"
-            if ax >= 1e9:  return f"${x/1e9:.2f}B"
-            if ax >= 1e6:  return f"${x/1e6:.2f}M"
-            if ax >= 1e3:  return f"${x/1e3:.2f}K"
-            return f"${x:,.0f}"
 
         display["Market Cap"] = display["Market Cap"].map(pretty_usd)
         display["USD Value"] = display["USD Value"].map(pretty_usd)
@@ -259,10 +343,24 @@ def render_overview():
         rows = min(row_count, len(display))
         height = _df_auto_height(rows)  # no vertical scrollbar for selected rows
 
-
+        st.markdown(
+            """
+            <style>
+            /* Right-align selected columns in st.dataframe */
+            [data-testid="stDataFrame"] td:nth-child(4),
+            [data-testid="stDataFrame"] td:nth-child(8),
+            [data-testid="stDataFrame"] td:nth-child(9),
+            [data-testid="stDataFrame"] td:nth-child(10),
+            [data-testid="stDataFrame"] td:nth-child(11) {
+                text-align: right !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
         st.dataframe(
             display,
-            use_container_width=True,
+            width="stretch",
             height=height,
             column_config={
                 "Crypto Asset": st.column_config.ImageColumn("Crypto Asset", width="small"),
@@ -304,4 +402,4 @@ def render_overview():
 
 
     # Last update info
-    st.caption("*Last treasury data base update: September 12, 2025*")
+    st.caption("*Last treasury data base update: September 14, 2025*")

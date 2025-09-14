@@ -19,6 +19,8 @@ TYPE_PALETTE = {
 COLOR_MAP = {k: f"rgb({r},{g},{b})" for k, (r, g, b) in TYPE_PALETTE.items()}
 
 def format_usd(value):
+    if value >= 1_000_000_000_000:
+        return f"${value/1_000_000_000_000:.1f}T"
     if value >= 1_000_000_000:
         return f"${value/1_000_000_000:.1f}B"
     elif value >= 1_000_000:
@@ -1149,6 +1151,316 @@ def lorenz_curve_chart(p, L, asset: str | None = None):
         showlegend=False,
         hoverlabel=dict(align="left")
     )
+    fig.add_annotation(
+    text="Crypto Treasury Tracker",
+    x=0.5, y=0.45, xref="paper", yref="paper",
+    showarrow=False, font=dict(size=35, color="white"), opacity=0.30,
+    xanchor="center", yanchor="middle",
+    )
     return fig
 
 
+def _entity_snapshot(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Collapse to one row per entity with:
+      - MarketCap  (expects column 'Market Cap')
+      - CryptoNAV  (sum of USD Value across assets)
+      - Exposure%  (CryptoNAV / MarketCap)
+      - Premium%   (uses 'Premium %' if present, else (MarketCap - MNAV)/MNAV if MNAV present)
+      - Entity Type, Country (mode)
+    """
+    g = (df.groupby("Entity Name", as_index=False)
+           .agg(**{
+               "CryptoNAV": ("USD Value", "sum"),
+               "MarketCap": ("Market Cap", "max"),
+               "Entity Type": ("Entity Type", lambda s: s.mode().iat[0] if len(s) else None),
+               "Country": ("Country", lambda s: s.mode().iat[0] if len(s) else None),
+               "MNAV": ("mNAV", lambda s: s.dropna().iloc[0] if "mNAV" in df.columns and s.dropna().size else np.nan),
+               "PremiumCol": ("Premium", lambda s: s.dropna().iloc[0] if "Premium" in df.columns and s.dropna().size else np.nan),
+           }))
+    # Exposure
+    g["Exposure %"] = np.where(g["MarketCap"] > 0, g["CryptoNAV"] / g["MarketCap"] * 100.0, np.nan)
+
+    # Premium
+    prem = g["PremiumCol"].copy()
+    if prem.isna().all() and "MNAV" in g.columns:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            prem = (g["MarketCap"] - g["MNAV"]) / g["MNAV"] * 100.0
+    g["Premium %"] = prem
+
+    # Core proxy (for decomposition)
+    g["Core Proxy"] = np.maximum(g["MarketCap"] - g["CryptoNAV"], 0.0)
+
+    return g[["Entity Name","Entity Type","Country","MarketCap","CryptoNAV","Core Proxy","Exposure %","Premium %"]]
+
+
+def exposure_ladder_bar(df: pd.DataFrame, top_n: int = 20) -> go.Figure:
+    snap = _entity_snapshot(df).dropna(subset=["MarketCap"])
+    snap = snap[snap["MarketCap"] > 0].copy()
+    snap = snap.sort_values("Exposure %", ascending=True).tail(top_n)
+
+    DEFAULT_BAR = "#66cded"
+    unique_assets = sorted(pd.Series(df.get("Crypto Asset", [])).dropna().unique().tolist())
+    if len(unique_assets) == 1:
+        asset_color = COLORS.get(unique_assets[0], DEFAULT_BAR)
+        bar_colors = [asset_color] * len(snap)
+    else:
+        bar_colors = [DEFAULT_BAR] * len(snap)
+
+    fig = go.Figure(go.Bar(
+        x=snap["Exposure %"],
+        y=snap["Entity Name"],
+        orientation="h",
+        text=[f"{v:.1f}%" if np.isfinite(v) else "—" for v in snap["Exposure %"]],
+        textposition="outside",
+        marker_color=bar_colors,#[COLOR_MAP.get(t, "rgba(200,200,200,1)") for t in snap["Entity Type"]],
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Exposure: %{x:.1f}%<br>"
+            "Crypto-NAV: %{customdata[0]}<br>"
+            "Market Cap: %{customdata[1]}<extra></extra>"
+        ),
+        customdata=np.c_[snap["CryptoNAV"].apply(lambda x: format_usd(x)), snap["MarketCap"].apply(lambda x: format_usd(x))],
+    ))
+    fig.update_layout(
+        height=max(400, 25 * len(snap) + 40),
+        margin=dict(l=100, r=20, t=60, b=10),
+        xaxis=dict(title="Crypto Treasury as % of Market Cap", ticksuffix="%",),
+        yaxis=dict(title=None),
+        showlegend=False,
+        hoverlabel=dict(align="left"),
+    )
+
+    fig.update_traces(textposition="outside", cliponaxis=False)
+    fig.update_layout(margin=dict(r=40))
+
+    fig.add_annotation(
+    text="Crypto Treasury Tracker",
+    x=0.5, y=0.45, xref="paper", yref="paper",
+    showarrow=False, font=dict(size=20, color="white"), opacity=0.30,
+    xanchor="center", yanchor="middle",
+    )
+
+    return fig
+
+
+def mcap_decomposition_bar(df: pd.DataFrame, top_n: int = 20) -> go.Figure:
+    snap = _entity_snapshot(df).dropna(subset=["MarketCap"])
+    snap["Core Proxy"] = np.maximum(snap["MarketCap"] - snap["CryptoNAV"], 0.0)
+
+    snap = snap[snap["MarketCap"] > 0].copy()
+
+    snap = snap.sort_values("MarketCap", ascending=True).tail(top_n)
+    total_labels = snap["MarketCap"].map(lambda x: format_usd(x))
+
+    fig = go.Figure()
+    fig.add_bar(
+        name="CryptoNAV",
+        x=snap["CryptoNAV"],
+        y=snap["Entity Name"],
+        orientation="h",
+        marker_color="#43d1a0",
+        customdata=np.c_[snap["MarketCap"].apply(lambda x: format_usd(x)), snap["CryptoNAV"].apply(lambda x: format_usd(x)), snap["Core Proxy"].apply(lambda x: format_usd(x))],
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Market Cap: %{customdata[0]}<br>"
+            "Crypto-NAV: %{customdata[1]}<br>"
+            "Core Proxy: %{customdata[2]}<extra></extra>"
+        ),
+    )
+    fig.add_bar(
+        name="Core Proxy",
+        x=snap["Core Proxy"],
+        y=snap["Entity Name"],
+        orientation="h",
+        text=total_labels,
+        textposition="outside",
+        cliponaxis=False,
+        marker_color="#8892a6",
+        customdata=np.c_[snap["MarketCap"].apply(lambda x: format_usd(x)), snap["CryptoNAV"].apply(lambda x: format_usd(x)), snap["Core Proxy"].apply(lambda x: format_usd(x))],
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Market Cap: %{customdata[0]}<br>"
+            "Crypto-NAV: %{customdata[1]}<br>"
+            "Core Proxy: %{customdata[2]}<extra></extra>"
+        ),
+    )
+    fig.update_layout(
+        barmode="stack",
+        height=max(400, 25 * len(snap) + 40),
+        margin=dict(l=100, r=20, t=60, b=10),
+        xaxis=dict(title="Market Cap (stacked)"),
+        yaxis=dict(title=None),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+        hoverlabel=dict(align="left"),
+    )
+    fig.update_traces(textposition="outside", cliponaxis=False)
+    fig.update_layout(margin=dict(r=40))
+    fig.update_layout(
+        barmode="stack",
+        xaxis=dict(title="Market Cap in USD (stacked)", tickprefix="$", separatethousands=True),
+    )
+    fig.add_annotation(
+    text="Crypto Treasury Tracker",
+    x=0.5, y=0.45, xref="paper", yref="paper",
+    showarrow=False, font=dict(size=20, color="white"), opacity=0.30,
+    xanchor="center", yanchor="middle",
+    )
+    return fig
+
+
+NEUTRAL_POS = "#43d1a0"
+NEUTRAL_NEG = "#f94144"
+
+def _entity_snapshot_by_asset(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per-entity, per-asset snapshot:
+      - MarketCap (one per entity; we take max)
+      - AssetNAV = USD Value per asset
+    """
+    g = (df.groupby(["Entity Name", "Crypto Asset"], as_index=False)
+            .agg(AssetNAV=("USD Value", "sum"),
+                 MarketCap=("Market Cap", "max"),
+                 EntityType=("Entity Type", lambda s: s.mode().iat[0] if len(s) else None),
+                 Country=("Country", lambda s: s.mode().iat[0] if len(s) else None)))
+    g = g.dropna(subset=["MarketCap"])
+    g = g[g["MarketCap"] > 0]
+    return g
+
+def corporate_sensitivity_bar(
+    df: pd.DataFrame,
+    shock_pct: float | None = None,              # e.g. +0.10 for +10% (uniform)
+    per_asset_shocks: dict[str, float] | None = None,  # {"BTC":0.1,"ETH":-0.1,...}
+    top_n: int = 25
+) -> go.Figure:
+    """
+    Computes ΔMarketCap implied by crypto price shocks:
+      ΔMC (USD) = Σ_asset (AssetNAV_asset * shock_asset)
+    Implied equity % move ~ ΔMC / MarketCap  (shares assumed constant).
+
+    If per_asset_shocks is provided, it takes precedence over shock_pct.
+    """
+    snap = _entity_snapshot_by_asset(df)
+    if snap.empty:
+        return go.Figure()
+
+    # Pick shocks
+    if per_asset_shocks:
+        shocks = per_asset_shocks
+        # ensure missing assets get 0 shock
+        assets_present = snap["Crypto Asset"].unique().tolist()
+        shocks = {a: float(shocks.get(a, 0.0)) for a in assets_present}
+        # compute per-entity delta via sum over assets
+        deltas = (snap.assign(Shock=snap["Crypto Asset"].map(shocks).fillna(0.0))
+                       .assign(Delta=lambda x: x["AssetNAV"] * x["Shock"])
+                       .groupby("Entity Name", as_index=False)
+                       .agg(Delta_USD=("Delta", "sum"),
+                            MarketCap=("MarketCap", "max")))
+    else:
+        s = float(shock_pct or 0.0)
+        deltas = (snap.groupby("Entity Name", as_index=False)
+                       .agg(Delta_USD=("AssetNAV", lambda v: v.sum() * s),
+                            MarketCap=("MarketCap", "max")))
+
+    deltas["Impact %"] = np.where(deltas["MarketCap"] > 0,
+                                  deltas["Delta_USD"] / deltas["MarketCap"] * 100.0,
+                                  np.nan)
+
+    d = deltas.sort_values("Impact %", key=lambda s: s.abs()).tail(top_n)
+
+    colors = [NEUTRAL_POS if x >= 0 else NEUTRAL_NEG for x in d["Delta_USD"]]
+
+    fig = go.Figure(go.Bar(
+        x=d["Impact %"],
+        y=d["Entity Name"],
+        orientation="h",
+        marker_color=colors,
+        text=[f"{v:+.2f}%" if np.isfinite(v) else "—" for v in d["Impact %"]],
+        textposition="outside",
+        cliponaxis=False,
+        customdata=np.c_[d["Delta_USD"], d["MarketCap"]],
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Implied Equity Move: %{x:+.2f}%<br>"
+            "ΔMC: %{customdata[0]:$,.0f}<br>"
+            "Baseline MC: %{customdata[1]:$,.0f}<extra></extra>"
+        ),
+    ))
+    fig.update_layout(
+        height=max(420, 24 * len(d) + 60),
+        margin=dict(l=120, r=50, t=50, b=10),
+        xaxis=dict(title="Implied Equity Move (%)", ticksuffix="%", zeroline=True),
+        yaxis=dict(title=None),
+        showlegend=False,
+        hoverlabel=dict(align="left"),
+    )
+
+    fig.add_annotation(
+    text="Crypto Treasury Tracker",
+    x=0.5, y=0.45, xref="paper", yref="paper",
+    showarrow=False, font=dict(size=35, color="white"), opacity=0.30,
+    xanchor="center", yanchor="middle",
+    )
+
+    return fig
+
+
+def mnav_comparison_bar(df: pd.DataFrame, top_n: int = 20, max_mnav: float | None = None) -> go.Figure:
+    """
+    Pick Top-N by CryptoNAV (largest treasuries), then DISPLAY sorted by mNAV (desc)
+    with a 1× guideline. Optional mNAV cap to drop outliers.
+    """
+    snap = _entity_snapshot(df).dropna(subset=["MarketCap"])
+    snap = snap[snap["MarketCap"] > 0].copy()
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        snap["mNAV"] = np.where(snap["CryptoNAV"] > 0, snap["MarketCap"] / snap["CryptoNAV"], np.nan)
+
+    # Optional outlier cap BEFORE picking Top-N
+    if max_mnav is not None:
+        snap = snap[snap["mNAV"] <= float(max_mnav)]
+
+    # 1) choose Top-N BY CryptoNAV
+    d = snap.dropna(subset=["mNAV"]).sort_values("CryptoNAV", ascending=False).head(top_n).copy()
+    if d.empty:
+        return go.Figure()
+
+    # 2) DISPLAY order: mNAV descending → left = largest, right = lowest
+    d = d.sort_values("mNAV", ascending=False)
+
+    colors   = np.where(d["mNAV"] >= 1.0, "#43d1a0", "#f04438")  # premium green / discount red
+    text_lbl = [f"{v:.2f}×" if np.isfinite(v) else "—" for v in d["mNAV"]]
+
+    ymax = float(np.nanmax(d["mNAV"]))
+    y_range = [0, ymax * 1.15] if np.isfinite(ymax) and ymax > 0 else None
+
+    fig = go.Figure(go.Bar(
+        x=d["Entity Name"],
+        y=d["mNAV"],
+        marker_color=colors,
+        text=text_lbl,
+        textposition="outside",
+        cliponaxis=False,
+        customdata=np.c_[d["MarketCap"], d["CryptoNAV"]],
+        hovertemplate="<b>%{x}</b><br>mNAV: %{y:.2f}×<br>Market Cap: %{customdata[0]:$,.0f}<br>Crypto-NAV: %{customdata[1]:$,.0f}<extra></extra>",
+    ))
+
+    fig.add_hline(y=1.0, line_width=1, line_dash="dash", line_color="#cbd5e1")
+
+    fig.update_layout(
+        height=500,
+        margin=dict(l=40, r=30, t=20, b=120),
+        xaxis=dict(title=None, tickangle=-35, automargin=True),
+        yaxis=dict(title="mNAV (×)", range=y_range),
+        showlegend=False,
+        hoverlabel=dict(align="left"),
+    )
+
+    # subtle watermark
+    fig.add_annotation(
+        text="Crypto Treasury Tracker",
+        x=0.5, y=0.45, xref="paper", yref="paper",
+        showarrow=False, font=dict(size=35, color="white"), opacity=0.3,
+        xanchor="center", yanchor="bottom",
+    )
+    return fig

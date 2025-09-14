@@ -160,7 +160,7 @@ def render_concentration():
 
             st.dataframe(
                 disp[["Weight_fmt", "SharePct"]],
-                use_container_width=True,
+                width="stretch",
                 height=min(400, 38*(len(disp)+1)+6),
                 column_config={
                     "Weight_fmt": st.column_config.TextColumn("Weight"),
