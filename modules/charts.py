@@ -18,6 +18,8 @@ TYPE_PALETTE = {
     }
 COLOR_MAP = {k: f"rgb({r},{g},{b})" for k, (r, g, b) in TYPE_PALETTE.items()}
 
+WATERMARK_TEXT="cryptotreasurytracker.xyz"
+
 def format_usd(value):
     if value >= 1_000_000_000_000:
         return f"${value/1_000_000_000_000:.1f}T"
@@ -150,7 +152,7 @@ def render_world_map(df, asset_filter, type_filter, value_range_filter):
     )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",
+        text=WATERMARK_TEXT,
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -218,7 +220,7 @@ def render_rankings(df, asset="BTC", by="units"):
     ))
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",
+        text=WATERMARK_TEXT,
         x=0.95, y=0.05,
         xref="paper", yref="paper",
         showarrow=False,
@@ -323,7 +325,7 @@ def historic_chart(df, by="USD"):
 
     # Watermark
     fig.add_annotation(
-        text="Crypto Treasury Tracker",
+        text=WATERMARK_TEXT,
         x=0.5, y=0.95,
         xref="paper", yref="paper",
         showarrow=False,
@@ -458,7 +460,7 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
     )
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
     fig.add_annotation(
-        text="Crypto Treasury Tracker", x=0.5, y=0.5, xref="paper", yref="paper",
+        text=WATERMARK_TEXT, x=0.5, y=0.5, xref="paper", yref="paper",
         showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
         xanchor="center", yanchor="middle"
     )
@@ -506,7 +508,7 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
     fig.update_yaxes(rangemode="tozero", tickprefix="$")
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
     fig.add_annotation(
-        text="Crypto Treasury Tracker", x=0.5, y=0.5, xref="paper", yref="paper",
+        text=WATERMARK_TEXT, x=0.5, y=0.5, xref="paper", yref="paper",
         showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
         xanchor="center", yanchor="middle"
     )
@@ -566,7 +568,7 @@ def holdings_by_entity_type_bar(df):
         )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
         x=0.5, y=0.95,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -632,7 +634,7 @@ def entity_type_distribution_pie(df):
     )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -720,7 +722,7 @@ def top_countries_by_entity_count(df):
         )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
         x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -810,7 +812,7 @@ def top_countries_by_usd_value(df):
         )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
         x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -913,7 +915,7 @@ def entity_ranking(df, by="USD", top_n=10):
         )
 
     fig.add_annotation(
-        text="Crypto Treasury Tracker",  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -1117,7 +1119,7 @@ def treemap_composition(df, mode: str = "country_type"):
     )
     # subtle watermark
     fig.add_annotation(
-        text="Crypto Treasury Tracker",
+        text=WATERMARK_TEXT,
         x=0.5, y=0.15, xref="paper", yref="paper",
         showarrow=False, font=dict(size=35, color="black"), opacity=0.30,
         xanchor="center", yanchor="middle",
@@ -1152,7 +1154,7 @@ def lorenz_curve_chart(p, L, asset: str | None = None):
         hoverlabel=dict(align="left")
     )
     fig.add_annotation(
-    text="Crypto Treasury Tracker",
+    text=WATERMARK_TEXT,
     x=0.5, y=0.45, xref="paper", yref="paper",
     showarrow=False, font=dict(size=35, color="white"), opacity=0.30,
     xanchor="center", yanchor="middle",
@@ -1235,7 +1237,7 @@ def exposure_ladder_bar(df: pd.DataFrame, top_n: int = 20) -> go.Figure:
     fig.update_layout(margin=dict(r=40))
 
     fig.add_annotation(
-    text="Crypto Treasury Tracker",
+    text=WATERMARK_TEXT,
     x=0.5, y=0.45, xref="paper", yref="paper",
     showarrow=False, font=dict(size=20, color="white"), opacity=0.30,
     xanchor="center", yanchor="middle",
@@ -1301,7 +1303,7 @@ def mcap_decomposition_bar(df: pd.DataFrame, top_n: int = 20) -> go.Figure:
         xaxis=dict(title="Market Cap in USD (stacked)", tickprefix="$", separatethousands=True),
     )
     fig.add_annotation(
-    text="Crypto Treasury Tracker",
+    text=WATERMARK_TEXT,
     x=0.5, y=0.45, xref="paper", yref="paper",
     showarrow=False, font=dict(size=20, color="white"), opacity=0.30,
     xanchor="center", yanchor="middle",
@@ -1396,7 +1398,7 @@ def corporate_sensitivity_bar(
     )
 
     fig.add_annotation(
-    text="Crypto Treasury Tracker",
+    text=WATERMARK_TEXT,
     x=0.5, y=0.45, xref="paper", yref="paper",
     showarrow=False, font=dict(size=35, color="white"), opacity=0.30,
     xanchor="center", yanchor="middle",
@@ -1458,7 +1460,7 @@ def mnav_comparison_bar(df: pd.DataFrame, top_n: int = 20, max_mnav: float | Non
 
     # subtle watermark
     fig.add_annotation(
-        text="Crypto Treasury Tracker",
+        text=WATERMARK_TEXT,
         x=0.5, y=0.45, xref="paper", yref="paper",
         showarrow=False, font=dict(size=35, color="white"), opacity=0.3,
         xanchor="center", yanchor="bottom",
