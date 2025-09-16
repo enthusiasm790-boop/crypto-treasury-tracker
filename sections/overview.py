@@ -22,11 +22,11 @@ supply_caps = {
     }
 
 TRUE_DAT_WHITELIST = {
-    "BTC": {"Strategy Inc.", "Twenty One Capital (XXI)", "Bitcoin Standard Treasury Company", "Metaplanet Inc.", "ProCap Financial, Inc", "Capital B", "H100 Group", #7 
-            "Bitcoin Treasury Corporation", "Treasury B.V.", "American Bitcoin Corp.", "Parataxis Holdings LLC", "Strive Asset Management", "ArcadiaB", "Cloud Ventures", #7
-            "Stacking Sats, Inc.", "Melanion Digital"}, #2
+    "BTC": {"Strategy Inc.", "Twenty One Capital (XXI)", "Bitcoin Standard Treasury Company", "Metaplanet Inc.", "ProCap Financial, Inc", "Capital B", "H100 Group", 
+            "Bitcoin Treasury Corporation", "Treasury B.V.", "American Bitcoin Corp.", "Parataxis Holdings LLC", "Strive Asset Management", "ArcadiaB", "Cloud Ventures",
+            "Stacking Sats, Inc.", "Melanion Digital", "Sequans Communications S.A.", "Semler Scientific, Inc.", "Africa Bitcoin Corporation"}, 
     "ETH": {"BitMine Immersion Technologies, Inc.", "SharpLink Gaming", "The Ether Machine", "ETHZilla Corporation", "FG Nexus", "GameSquare Holdings", "Centaurus Energy Inc."},
-    "SOL": {"Upexi, Inc.", "DeFi Development Corp.", "Sharps Technology, Inc.", "Classover Holdings, Inc.", "Sol Strategies, Inc.", "Sol Treasury Corp."},
+    "SOL": {"Forward Industries, Inc.", "Upexi, Inc.", "DeFi Development Corp.", "Sharps Technology, Inc.", "Classover Holdings, Inc.", "Sol Strategies, Inc.", "Sol Treasury Corp."},
     "LTC": {"Lite Strategy, Inc."},
     "XRP": set(),
     "SUI": set(),
@@ -238,7 +238,7 @@ def render_overview():
         valid_true = valid[valid["Entity Name"].isin(active_whitelist)]
         avg_mnav_true = valid_true["mNAV"].median()
 
-        # use the same slice you render in st.dataframe
+        # DATCO
         sub_2 = filtered.head(int(row_count)).copy()
 
         # recompute DATCO mask on the sliced data
@@ -263,9 +263,9 @@ def render_overview():
         with c2_kpi:
             with st.container(border=True):
                 st.metric(
-                    "Total Crypto-NAV",
+                    "Total Crypto-NAV (selected)",
                     f"{pretty_usd(nav_total)}",
-                    help=("Total value of selected crypto treasury companies (Crypto-NAV).")
+                    help=("Total USD value of selected crypto treasury entities (Crypto-NAV).")
                 )
 
         with c3_kpi:
@@ -293,6 +293,9 @@ def render_overview():
                 )
 
         sub = filtered.head(row_count)
+        sub = sub.reset_index(drop=True)
+        sub.index = sub.index + 1
+        sub.index.name = "Rank"
 
         display = sub.copy()
 
@@ -321,8 +324,9 @@ def render_overview():
         display["USD Value"] = display["USD Value"].map(pretty_usd)
 
         display = display[[
-            "Crypto Asset","Entity Name","Ticker","Market Cap","Entity Type","Country",
-            "Holdings (Unit)","USD Value","mNAV_disp","Premium_disp","TTMCR_disp","% of Supply"
+            "Entity Name", "Ticker", "Entity Type", "Country",                      # Meta data
+            "Crypto Asset", "Holdings (Unit)", "% of Supply", "USD Value",                # Crypto data
+            "Market Cap", "mNAV_disp", "Premium_disp", "TTMCR_disp"                 # Market data
         ]]
 
 
@@ -347,11 +351,11 @@ def render_overview():
             """
             <style>
             /* Right-align selected columns in st.dataframe */
-            [data-testid="stDataFrame"] td:nth-child(4),
             [data-testid="stDataFrame"] td:nth-child(8),
             [data-testid="stDataFrame"] td:nth-child(9),
             [data-testid="stDataFrame"] td:nth-child(10),
-            [data-testid="stDataFrame"] td:nth-child(11) {
+            [data-testid="stDataFrame"] td:nth-child(11),
+            [data-testid="stDataFrame"] td:nth-child(12) {
                 text-align: right !important;
             }
             </style>
@@ -365,15 +369,15 @@ def render_overview():
             column_config={
                 "Crypto Asset": st.column_config.ImageColumn("Crypto Asset", width="small"),
                 #"Market Cap": st.column_config.NumberColumn("Market Cap", format="$%d"),
-                "Market Cap": st.column_config.TextColumn("Market Cap", width="small"),    # compact view
                 "Entity Type": st.column_config.ImageColumn("Entity Type", width="medium"),
-                "Holdings (Unit)": st.column_config.NumberColumn("Holdings (Unit)", format="%d"),
+                "Holdings (Unit)": st.column_config.NumberColumn("Holdings", format="%d"),
+                "% of Supply": st.column_config.ProgressColumn("% of Supply", min_value=0, max_value=100, format="%.2f%%"),
                 #"USD Value": st.column_config.NumberColumn("USD Value", format="$%d"),
-                "USD Value": st.column_config.TextColumn("USD Value", width="small"),    # compact view
+                "Market Cap": st.column_config.TextColumn("Market Cap", width="small"),
+                "USD Value": st.column_config.TextColumn("Crypto-NAV", width="small"),
                 "mNAV_disp":    st.column_config.TextColumn("mNAV", width="small"),
                 "Premium_disp": st.column_config.TextColumn("Premium", width="small"),
                 "TTMCR_disp":   st.column_config.TextColumn("TTMCR", width="small"),
-                "% of Supply": st.column_config.ProgressColumn("% of Supply", min_value=0, max_value=100, format="%.2f%%"),
             },
         )
 
@@ -402,4 +406,4 @@ def render_overview():
 
 
     # Last update info
-    st.caption("*Last treasury data base update: September 14, 2025*")
+    #st.caption("*Last treasury data base update: September 14, 2025*")

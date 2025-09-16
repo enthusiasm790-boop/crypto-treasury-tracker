@@ -93,18 +93,18 @@ def _table_pdf_bytes(df, logo_map, title="Treasury ranking list"):
     avail_w = pdf.w - pdf.l_margin - pdf.r_margin
     cols = [
         ("Rank",            0.04),
-        ("Asset",           0.035),
         ("Entity Name",     0.15),
         ("Ticker",          0.05),
-        ("Market Cap",      0.07),
         ("Entity Type",     0.12),
         ("Country",         0.09),
+        ("Asset",           0.035),
         ("Holdings (Unit)", 0.09),
+        ("% Supply",        0.10),
         ("USD Value",       0.07),
+        ("Market Cap",      0.07),
         ("mNAV",            0.05),
         ("Premium",         0.07),
         ("TTMCR",           0.06),
-        ("% Supply",        0.10),
     ]
 
     col_w = [round(avail_w * r, 2) for _, r in cols]
@@ -239,79 +239,74 @@ def _table_pdf_bytes(df, logo_map, title="Treasury ranking list"):
         pdf.set_xy(col_x[0], y)
         pdf.cell(col_w[0], row_h, str(rank), border=1, align="L")
 
-        # Asset (logo)
+        # Entity Name
         pdf.set_xy(col_x[1], y)
-        pdf.cell(col_w[1], row_h, "", border=1)
+        name = text_fit(row["Entity Name"], col_w[1])
+        pdf.cell(col_w[1], row_h, name, border=1, align="L")
+
+        # Stock Ticker
+        pdf.set_xy(col_x[2], y)
+        ticker_txt = str(row.get("Ticker", "") or "-")
+        pdf.cell(col_w[2], row_h, text_fit(ticker_txt, col_w[2]), border=1, align="L")
+
+        # Entity Type (rounded pill)
+        pdf.set_xy(col_x[3], y)
+        pdf.cell(col_w[3], row_h, "", border=1)
+        draw_type_pill(col_x[3], y, col_w[3], row_h, str(row["Entity Type"]))
+
+        # Country
+        pdf.set_xy(col_x[4], y)
+        country = text_fit(row.get("Country", ""), col_w[4])
+        pdf.cell(col_w[4], row_h, country, border=1, align="L")
+
+        # Asset (logo)
+        pdf.set_xy(col_x[5], y)
+        pdf.cell(col_w[5], row_h, "", border=1)
         asset = str(row["Crypto Asset"])
         if asset in logo_map and logo_map[asset]:
             b64 = logo_map[asset].split(",")[-1]
             img = io.BytesIO(base64.b64decode(b64))
             img_h = 5.2
-            x_img = col_x[1] + 2.2
+            x_img = col_x[5] + 2.2
             y_img = y + (row_h - img_h) / 2.0
             pdf.image(img, x=x_img, y=y_img, h=img_h)
 
-        # Entity Name
-        pdf.set_xy(col_x[2], y)
-        name = text_fit(row["Entity Name"], col_w[2])
-        pdf.cell(col_w[2], row_h, name, border=1, align="L")
-
-        # Stock Ticker
-        pdf.set_xy(col_x[3], y)
-        ticker_txt = str(row.get("Ticker", "") or "-")
-        pdf.cell(col_w[3], row_h, text_fit(ticker_txt, col_w[3]), border=1, align="L")
-
-        # Market Cap (USD pretty, dash if NA)
-        # Market Cap (pretty, dash if NA)
-        pdf.set_xy(col_x[4], y)
-        mc_txt = _pretty_usd(row.get("Market Cap", None))
-        pdf.cell(col_w[4], row_h, mc_txt, border=1, align="R")
-
-
-
-        # Entity Type (rounded pill)
-        pdf.set_xy(col_x[5], y)
-        pdf.cell(col_w[5], row_h, "", border=1)
-        draw_type_pill(col_x[5], y, col_w[5], row_h, str(row["Entity Type"]))
-
-        # Country
-        pdf.set_xy(col_x[6], y)
-        country = text_fit(row.get("Country", ""), col_w[6])
-        pdf.cell(col_w[6], row_h, country, border=1, align="L")
-
         # Holdings
+        pdf.set_xy(col_x[6], y)
+        pdf.cell(col_w[6], row_h, f"{int(row['Holdings (Unit)']):,}".replace(",", " "), border=1, align="R")
+
+        # % Supply
         pdf.set_xy(col_x[7], y)
-        pdf.cell(col_w[7], row_h, f"{int(row['Holdings (Unit)']):,}".replace(",", " "), border=1, align="R")
+        pdf.cell(col_w[7], row_h, "", border=1)
+        draw_bar(col_x[7] + 2, y + 1.4, col_w[7] - 4, row_h - 2.8, float(row["% of Supply"]))
 
         # USD Value (pretty, dash if NA)
         pdf.set_xy(col_x[8], y)
         uv_txt = _pretty_usd(row.get("USD Value", None))
         pdf.cell(col_w[8], row_h, uv_txt, border=1, align="R")
 
+        # Market Cap (USD pretty, dash if NA)
+        pdf.set_xy(col_x[9], y)
+        mc_txt = _pretty_usd(row.get("Market Cap", None))
+        pdf.cell(col_w[9], row_h, mc_txt, border=1, align="R")
 
         # mNAV (2dp, dash if NA)
-        pdf.set_xy(col_x[9], y)
+        pdf.set_xy(col_x[10], y)
         _mn = row.get("mNAV", None)
         mn_txt = "-" if (_mn is None or (isinstance(_mn, float) and _mn != _mn)) else f"{_mn:.2f}"
-        pdf.cell(col_w[9], row_h, mn_txt, border=1, align="R")
+        pdf.cell(col_w[10], row_h, mn_txt, border=1, align="R")
 
         # Premium (2dp %, dash if NA)
-        pdf.set_xy(col_x[10], y)
+        pdf.set_xy(col_x[11], y)
         _pr = row.get("Premium", None)
         pr_txt = "-" if (_pr is None or (isinstance(_pr, float) and _pr != _pr)) else f"{_pr:.2f}%"
-        pdf.cell(col_w[10], row_h, pr_txt, border=1, align="R")
+        pdf.cell(col_w[11], row_h, pr_txt, border=1, align="R")
 
         # TTMCR (2dp %, dash if NA)
-        pdf.set_xy(col_x[11], y)
+        pdf.set_xy(col_x[12], y)
         _tt = row.get("TTMCR", None)
         tt_txt = "-" if (_tt is None or (isinstance(_tt, float) and _tt != _tt)) else f"{_tt:.2f}%"
-        pdf.cell(col_w[11], row_h, tt_txt, border=1, align="R")
-
-        # % Supply
-        pdf.set_xy(col_x[12], y)
-        pdf.cell(col_w[12], row_h, "", border=1)
-        draw_bar(col_x[12] + 2, y + 1.4, col_w[12] - 4, row_h - 2.8, float(row["% of Supply"]))
-
+        pdf.cell(col_w[12], row_h, tt_txt, border=1, align="R")
 
         pdf.set_y(y + row_h)
         rows_on_page += 1
