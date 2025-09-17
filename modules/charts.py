@@ -322,6 +322,11 @@ def historic_chart(df, by="USD"):
                 font=dict(size=14, color='white'),
                 yanchor='bottom'
             )
+            fig.update_layout(
+                yaxis=dict(
+                    tickprefix="$",
+                )
+            )
 
     # Watermark
     fig.add_annotation(
@@ -339,9 +344,9 @@ def historic_chart(df, by="USD"):
         margin=dict(t=50, b=20),
         legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
         hoverlabel=dict(align='left'),
-        xaxis_title="",
-        yaxis_title="",
-        legend_title_text=''
+        xaxis_title=None,
+        yaxis_title=None,
+        legend_title_text=None,
     )
 
     fig.update_xaxes(
@@ -409,34 +414,36 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
             mode="lines",
             line=dict(width=0, color=COLORS.get(a, "#888")),
             fill="tozeroy",
-            name=f"{a} Units",
+            name=f"{a} Total Units",
             hovertemplate="<b>%{x|%b %Y}</b><br>Units: <b>%{y:,.0f}</b><extra></extra>",
-            yaxis="y"
+            yaxis="y2"
         ))
         # USD line (right axis)
         fig.add_trace(go.Scatter(
             x=s["Date"], y=s["USD Value"],
             mode="lines",
             line=dict(width=3, color=COLORS.get(a, "#ff9393")),
-            name=f"{a} USD",
+            name=f"{a} Total USD Value",
             hovertemplate="<b>%{x|%b %Y}</b><br>USD: <b>%{y:$,.0f}</b><extra></extra>",
-            yaxis="y2"
+            yaxis="y"
         ))
         fig.update_layout(
             yaxis=dict(
-                title="Units",
+                title="USD Value",
                 rangemode="tozero",
+                tickprefix="$",
                 showgrid=True,           # left axis provides the grid
                 zeroline=False
             ),
             yaxis2=dict(
-                title="USD",
+                title="Total Units",
                 overlaying="y",
                 side="right",
                 rangemode="tozero",
                 showgrid=False,          # critical fix hide the second grid
                 zeroline=False,
-                showline=True,           # optional just for a neat right border
+                showline=False,
+                tickprefix="",
                 linecolor="rgba(255,255,255,0.4)"
             ),
         )
@@ -470,10 +477,18 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
         margin=dict(t=50, b=20, l=40, r=20),
         legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
         hoverlabel=dict(align='left'),
-        xaxis_title="", yaxis_title="",
-        legend_title_text='',
+        xaxis_title=None, yaxis_title=None,
+        legend_title_text=None,
+        yaxis=dict(
+            title=None,
+            rangemode="tozero",
+            tickprefix="$",   # only multi-asset mode gets a dollar prefix on the left axis
+            showgrid=True,
+            zeroline=False
+        )
     )
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+
     fig.add_annotation(
         text=WATERMARK_TEXT, x=0.5, y=0.5, xref="paper", yref="paper",
         showarrow=False, font=dict(size=30, color="white"), opacity=0.3,
@@ -518,7 +533,7 @@ def dominance_area_chart_usd(df_historic: pd.DataFrame, current_df: pd.DataFrame
         margin=dict(t=50, b=20, l=40, r=20),
         legend=dict(orientation='h', yanchor='bottom', y=1.05, xanchor='center', x=0.5),
         hoverlabel=dict(align='left'),
-        xaxis_title="", yaxis_title="", legend_title_text='',
+        xaxis_title=None, yaxis_title=None, legend_title_text=None,
     )
     fig.update_yaxes(rangemode="tozero", tickprefix="$")
     fig.update_xaxes(dtick="M1", tickformat="%b %Y")
@@ -583,7 +598,7 @@ def holdings_by_entity_type_bar(df):
         )
 
     fig.add_annotation(
-        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,
         x=0.5, y=0.95,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -596,7 +611,6 @@ def holdings_by_entity_type_bar(df):
     fig.update_traces(
         hovertemplate="%{customdata[0]}<extra></extra>"
     )
-
 
     # Step 5: Layout updates
     fig.update_traces(
@@ -614,10 +628,13 @@ def holdings_by_entity_type_bar(df):
             xanchor='center',
             x=0.5
         ),
+        yaxis=dict(
+            tickprefix="$"
+        ),
         hoverlabel=dict(align='left'),
-        xaxis_title="",
-        yaxis_title="",
-        legend_title_text=''
+        xaxis_title=None,
+        yaxis_title=None,
+        legend_title_text=None
     )
 
     return fig
@@ -649,7 +666,7 @@ def entity_type_distribution_pie(df):
     )
 
     fig.add_annotation(
-        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -737,7 +754,7 @@ def top_countries_by_entity_count(df):
         )
 
     fig.add_annotation(
-        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,
         x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -757,8 +774,8 @@ def top_countries_by_entity_count(df):
     fig.update_layout(
         height=394,
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
-        yaxis=dict(categoryorder='total ascending', title="", tickfont=dict(size=14)),
-        xaxis=dict(tickformat=',d', title=""),
+        yaxis=dict(categoryorder='total ascending', title=None, tickfont=dict(size=14)),
+        xaxis=dict(tickformat=',d', title=None),
         showlegend=False
     )
 
@@ -827,7 +844,7 @@ def top_countries_by_usd_value(df):
         )
 
     fig.add_annotation(
-        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,
         x=0.5, y=0.05,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -847,8 +864,8 @@ def top_countries_by_usd_value(df):
     fig.update_layout(
         height=394,
         margin=dict(t=10, b=20),  # ↓ reduce top and bottom margin
-        yaxis=dict(categoryorder='total ascending', title=""),
-        xaxis=dict(title=""),
+        yaxis=dict(categoryorder='total ascending', title=None),
+        xaxis=dict(title=None, tickprefix = "$"),
         showlegend=False,
     )
 
@@ -930,7 +947,7 @@ def entity_ranking(df, by="USD", top_n=10):
         )
 
     fig.add_annotation(
-        text=WATERMARK_TEXT,  # or "Crypto Treasury Tracker"
+        text=WATERMARK_TEXT,
         x=0.5, y=0.5,                      # Center of chart
         xref="paper", yref="paper",
         showarrow=False,
@@ -948,7 +965,9 @@ def entity_ranking(df, by="USD", top_n=10):
     fig.update_layout(
         height=500,
         xaxis=dict(title=None, tickfont=dict(size=12)),
-        yaxis=dict(title="" if by == "USD" else ""),
+        yaxis=dict(title=None if by == "USD" else None,
+                   tickprefix="$" if by == "USD" else ""
+                   ),
         margin=dict(l=40, r=40, t=50, b=60),
         font=dict(size=12),
         legend=dict(

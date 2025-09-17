@@ -732,7 +732,7 @@ def render_flow_decomposition(df_hist_filtered: pd.DataFrame):
             barmode="relative",
             height=360,
             margin=dict(l=40, r=20, t=10, b=30),
-            xaxis=dict(title="", tickformat="%b %Y"),
+            xaxis=dict(title=None, tickformat="%b %Y"),
             yaxis=dict(title="ΔUSD", tickprefix="$"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
             hoverlabel=dict(align="left"),
