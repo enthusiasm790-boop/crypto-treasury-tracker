@@ -196,11 +196,12 @@ def render_overview():
             )
             st.session_state["flt_country"] = sel_co
 
+        total_rows = df.shape[0]
         with c4:
             row_count = st.number_input(
-                f"Adjust List",
+                f"Adjust Rows (Max. {total_rows})",
                 1, max(1, len_table), default_rows,  # guard: max at least 1
-                help="Select number of crypto treasury holders to display, sorted by USD value.",
+                help="Select number of rows to display, sorted by USD value. Some entities hold more than one crypto asset and are shown separately.",
                 key="tbl_rows",
             )
 
@@ -242,6 +243,8 @@ def render_overview():
 
         # DATCO
         sub_2 = filtered.head(int(row_count)).copy()
+        
+        total_entities = df["Entity Name"].nunique()
 
         filtered_count = sub_2.shape[0]
         # recompute DATCO mask on the sliced data
@@ -274,7 +277,7 @@ def render_overview():
         with c3_kpi:
             with st.container(border=True):
                 st.metric(
-                    f"Number of Entities (Total: {len_table})",
+                    f"Number of Entities (selected)",
                     filtered_count,
                     help=("Current number view of selected rows (entities).")
                 )
