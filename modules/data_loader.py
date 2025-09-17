@@ -14,6 +14,7 @@ ASSETS = [
     "SUI",
     "LTC",
     "XRP",
+    "HYPE",
     #"BNB",
     ]
 
@@ -24,7 +25,8 @@ COINGECKO_IDS = {
     # "BNB":"binancecoin",
     "SOL":"solana",
     "SUI": "sui",
-    "LTC":"litecoin"
+    "LTC":"litecoin",
+    "HYPE":"hyperliquid",
     }
 
 DEFAULT_PRICES = {
@@ -33,6 +35,7 @@ DEFAULT_PRICES = {
     "XRP":3.50,
     #"BNB":700.00,
     "SOL":150.00, 
+    "HYPE":40.00, 
     "SUI":3.50, 
     "LTC":110.00
     }
@@ -46,6 +49,7 @@ SUPPLY_CAPS = {
     "SOL": 540_000_000,
     "SUI": 3_500_000_000,
     "LTC": 76_000_000,
+    "HYPE": 270_000_000,
     }
 
 

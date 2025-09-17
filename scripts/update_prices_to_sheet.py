@@ -11,6 +11,7 @@ ASSETS = [
     "XRP",
     "SUI",
     "LTC",
+    "HYPE",
     ]  
 COINGECKO_IDS = {
     "BTC": "bitcoin", 
@@ -19,7 +20,9 @@ COINGECKO_IDS = {
     "SOL": "solana",
     "SUI": "sui",
     "LTC": "litecoin",
+    "HYPE":"hyperliquid",
     }
+
 
 # === Google Sheet target ===
 SHEET_NAME = "master_table_v01"

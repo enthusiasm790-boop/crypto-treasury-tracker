@@ -6,8 +6,8 @@ import plotly.express as px
 from plotly.colors import qualitative
 
 
-ASSETS_ORDER = ["BTC","ETH","SOL","XRP","BNB","SUI","LTC"]  # stable order for stacking/colors
-COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+ASSETS_ORDER = ["BTC","ETH","SOL","XRP","BNB","SUI","LTC", "HYPE"]  # stable order for stacking/colors
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D", "HYPE":"#97fce4"}
 TYPE_PALETTE = {
     "Public Company": (123, 197, 237), # blue 
     "Private Company": (232, 118, 226), # rose 

@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 
 from modules.kpi_helpers import render_kpis
 from analytics import log_table_render
-from modules.ui import btc_b64, eth_b64, sol_b64, sui_b64, ltc_b64, xrp_b64
+from modules.ui import btc_b64, eth_b64, sol_b64, sui_b64, ltc_b64, xrp_b64, hype_b64
 from modules.pdf_helper import _table_pdf_bytes
 
 # Supply column row-wise
@@ -19,6 +19,7 @@ supply_caps = {
     "SOL": 540_000_000,
     "SUI": 3_500_000_000,
     "LTC": 76_000_000,
+    "HYPE": 270_000_000,
     }
 
 TRUE_DAT_WHITELIST = {
@@ -30,6 +31,7 @@ TRUE_DAT_WHITELIST = {
     "LTC": {"Lite Strategy, Inc."},
     "XRP": set(),
     "SUI": set(),
+    "HYPE": {"Hyperliquid Strategies Inc", "Hyperion DeFi, Inc."},
 }
 
 
@@ -196,7 +198,7 @@ def render_overview():
 
         with c4:
             row_count = st.number_input(
-                f"Adjust List (Total # {len_table})",
+                f"Adjust List",
                 1, max(1, len_table), default_rows,  # guard: max at least 1
                 help="Select number of crypto treasury holders to display, sorted by USD value.",
                 key="tbl_rows",
@@ -241,6 +243,7 @@ def render_overview():
         # DATCO
         sub_2 = filtered.head(int(row_count)).copy()
 
+        filtered_count = sub_2.shape[0]
         # recompute DATCO mask on the sliced data
         names_sub = sub_2["Entity Name"].astype(str)
         datco_mask_sub = names_sub.isin(active_whitelist)
@@ -271,9 +274,9 @@ def render_overview():
         with c3_kpi:
             with st.container(border=True):
                 st.metric(
-                    f"Total DATCO Crypto-NAV ({datco_count})",
-                    f"{pretty_usd(nav_datco)}",
-                    help=("Share of aggregate Crypto-NAV of all Digital Asset Treasury Companies (DATCO) compared to all entities in the current selection in USD.")
+                    f"Number of Entities (Total: {len_table})",
+                    filtered_count,
+                    help=("Current number view of selected rows (entities).")
                 )
 
         with c4_kpi:
@@ -317,6 +320,7 @@ def render_overview():
             "XRP": f"data:image/png;base64,{xrp_b64}",
             "SUI": f"data:image/png;base64,{sui_b64}",
             "LTC": f"data:image/png;base64,{ltc_b64}",
+            "HYPE": f"data:image/png;base64,{hype_b64}",
         }
         display["Crypto Asset"] = display["Crypto Asset"].map(lambda a: logo_map.get(a, ""))
 

@@ -8,7 +8,7 @@ from modules.charts import render_rankings
 from modules.ui import render_plotly
 
 
-COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D", "Other": "rgba(255,255,255,0.9)"}
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D", "HYPE":"#97fce4", "Other": "rgba(255,255,255,0.9)"}
 
 _THIS = os.path.dirname(os.path.abspath(__file__))
 _ASSETS = os.path.join(_THIS, "..", "assets")

@@ -2,7 +2,7 @@ import os, base64
 import streamlit as st
 
 
-COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D"}
+COLORS = {"BTC":"#f7931a","ETH":"#6F6F6F","XRP":"#00a5df","BNB":"#f0b90b","SOL":"#dc1fff", "SUI":"#C0E6FF", "LTC":"#345D9D", "HYPE":"#97fce4"}
 
 
 def load_base64_image(path):
@@ -18,6 +18,7 @@ sol_b64 = load_base64_image(os.path.join(_ASSETS, "solana-logo.png"))
 sui_b64 = load_base64_image(os.path.join(_ASSETS, "sui-logo.png"))
 ltc_b64 = load_base64_image(os.path.join(_ASSETS, "litecoin-logo.png"))
 xrp_b64 = load_base64_image(os.path.join(_ASSETS, "xrp-logo.png"))
+hype_b64 = load_base64_image(os.path.join(_ASSETS, "hyperliquid-logo.png"))
 
 cg_b64  = load_base64_image(os.path.join(_ASSETS, "coingecko-logo.png"))
 logo_b64 = load_base64_image(os.path.join(_ASSETS, "ctt-symbol.svg"))
@@ -33,6 +34,7 @@ def render_header():
     sui = st.session_state["prices"][3]
     ltc = st.session_state["prices"][4]
     xrp = st.session_state["prices"][5]
+    hype = st.session_state["prices"][6]
 
     st.markdown(
         """
@@ -56,6 +58,9 @@ def render_header():
         <img src="data:image/png;base64,{xrp_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
         <b>${xrp:,.2f}</b>
         &nbsp;&nbsp;
+        <img src="data:image/png;base64,{hype_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
+        <b>${hype:,.2f}</b>        
+        &nbsp;&nbsp;
         <img src="data:image/png;base64,{sui_b64}" style="height:20px;vertical-align:middle;margin-top:-3px;margin-right:2px;">
         <b>${sui:,.2f}</b>
         &nbsp;&nbsp;
@@ -78,11 +83,11 @@ def render_subscribe_cta():
     st.sidebar.write(" ")
     st.sidebar.write("")
     st.sidebar.link_button(
-        "📥  Sign up for the monthly Crypto Treasury Report",
+        "📥  Sign Up for the Weekly Crypto Treasury Newsletter",
         CTA_URL,
         type="secondary",
         width="stretch",
-        help="Click here to sign up for the monthly Crypto Treasury Report."
+        help="Click here to sign up for the weekly crypto treasury newsletter."
     )
     st.sidebar.write(" ")
     st.sidebar.write(" ")
@@ -97,11 +102,11 @@ def render_support():
     st.sidebar.write(" ")
 
     st.sidebar.link_button(
-        "Support The CTT ❤️",
+        "Support the CTT ❤️",
         SUPPORT_URL,
         type="secondary",
         width="stretch",
-        help="Click here to help keeping the Tracker running & updated."
+        help="Click here to help keeping the CTT running & updated."
     )
 
     st.sidebar.write("")

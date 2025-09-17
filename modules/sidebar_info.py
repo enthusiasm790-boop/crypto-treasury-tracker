@@ -103,7 +103,7 @@ def render_sidebar():
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         "<p style='font-size: 0.75rem; color: gray;'>"
-        "v1.1 • © 2025 Crypto Treasury Tracker"
+        "v2.0 • © 2025 Crypto Treasury Tracker"
         "</p>", unsafe_allow_html=True
     )
 
