@@ -739,8 +739,8 @@ def render_flow_decomposition(df_hist_filtered: pd.DataFrame):
         )
         # Watermark
         fig.add_annotation(
-            text="Crypto Treasury Tracker",
-            x=0.5, y=0.95,
+            text="cryptotreasurytracker.xyz",
+            x=0.5, y=0.9,
             xref="paper", yref="paper",
             showarrow=False,
             font=dict(size=30, color="white"),

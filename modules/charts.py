@@ -423,9 +423,24 @@ def cumulative_market_cap_chart(df_historic: pd.DataFrame, current_df: pd.DataFr
             yaxis="y2"
         ))
         fig.update_layout(
-            yaxis=dict(title="Units", rangemode="tozero"),
-            yaxis2=dict(title="USD", overlaying="y", side="right", rangemode="tozero"),
+            yaxis=dict(
+                title="Units",
+                rangemode="tozero",
+                showgrid=True,           # left axis provides the grid
+                zeroline=False
+            ),
+            yaxis2=dict(
+                title="USD",
+                overlaying="y",
+                side="right",
+                rangemode="tozero",
+                showgrid=False,          # critical fix hide the second grid
+                zeroline=False,
+                showline=True,           # optional just for a neat right border
+                linecolor="rgba(255,255,255,0.4)"
+            ),
         )
+
     else:
         # Multi-asset → one total USD line + per-asset USD lines
         series = totals.reset_index().sort_values("Date")
